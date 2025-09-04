@@ -6,7 +6,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useHybridProducts } from '@/hooks/useHybridData';
-import { CATEGORY_TRENDS, formatCurrency, formatNumber } from '@/data/mockHistoricalData';
+import { useCategoryAnalysis } from '@/hooks/useAnalyticsData';
+import { formatCurrency, formatNumber } from '@/data/mockHistoricalData';
 import { TimeFilter, DateRange } from '../AdvancedStatsOverview';
 
 interface CategoryAnalysisProps {
@@ -15,7 +16,8 @@ interface CategoryAnalysisProps {
 }
 
 const CategoryAnalysis = ({ timeFilter, dateRange }: CategoryAnalysisProps) => {
-  const { data: products, isLoading, isFromApi } = useHybridProducts();
+  const { data: products, isLoading: productsLoading, isFromApi: productsFromApi } = useHybridProducts();
+  const { data: categoryTrends, isLoading: trendsLoading, isFromApi: trendsFromApi } = useCategoryAnalysis();
   
   const categoryData = useMemo(() => {
     if (!products || products.length === 0) return [];
@@ -62,14 +64,17 @@ const CategoryAnalysis = ({ timeFilter, dateRange }: CategoryAnalysisProps) => {
   }, [products]);
 
   const trendData = useMemo(() => {
-    return CATEGORY_TRENDS.slice(-7).map(item => ({
+    const trends = categoryTrends || [];
+    if (!Array.isArray(trends)) return [];
+    
+    return trends.slice(-7).map(item => ({
       ...item,
       formattedDate: new Date(item.date).toLocaleDateString('id-ID', { 
         day: '2-digit', 
         month: 'short' 
       })
     }));
-  }, []);
+  }, [categoryTrends]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -111,7 +116,7 @@ const CategoryAnalysis = ({ timeFilter, dateRange }: CategoryAnalysisProps) => {
     );
   };
 
-  if (isLoading) {
+  if (productsLoading || trendsLoading) {
     return (
       <Card className="glass">
         <CardHeader>
@@ -130,7 +135,7 @@ const CategoryAnalysis = ({ timeFilter, dateRange }: CategoryAnalysisProps) => {
         <CardTitle className="flex items-center gap-2">
           <div className="w-2 h-6 bg-accent rounded-full" />
           Analisis Kategori Produk
-          {isFromApi && (
+          {(productsFromApi || trendsFromApi) && (
             <Badge variant="secondary" className="text-xs bg-success/20 text-success ml-auto">
               Live Data
             </Badge>

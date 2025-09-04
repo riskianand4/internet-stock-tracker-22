@@ -76,7 +76,7 @@ const AdvancedStatsOverview = () => {
           </motion.div>
 
           <motion.div variants={itemVariants}>
-            <VelocityAnalysis />
+            <VelocityAnalysis timeFilter={timeFilter} dateRange={dateRange} />
           </motion.div>
         </div>
       </motion.div>

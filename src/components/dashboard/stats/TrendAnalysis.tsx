@@ -3,8 +3,10 @@ import { motion } from 'framer-motion';
 import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { HISTORICAL_DATA, getDataForPeriod, formatCurrency, formatNumber } from '@/data/mockHistoricalData';
+import { Badge } from '@/components/ui/badge';
+import { formatCurrency, formatNumber } from '@/data/mockHistoricalData';
 import { TimeFilter, DateRange } from '../AdvancedStatsOverview';
+import { useAnalyticsTrends } from '@/hooks/useAnalyticsData';
 
 interface TrendAnalysisProps {
   timeFilter: TimeFilter;
@@ -12,20 +14,19 @@ interface TrendAnalysisProps {
 }
 
 const TrendAnalysis = ({ timeFilter, dateRange }: TrendAnalysisProps) => {
+  const { data: rawData, isLoading, isFromApi, error } = useAnalyticsTrends(timeFilter);
+  
   const chartData = useMemo(() => {
-    const days = timeFilter === 'week' ? 7 : 
-                 timeFilter === 'month' ? 30 :
-                 timeFilter === 'quarter' ? 90 :
-                 timeFilter === 'year' ? 365 : 30;
-                 
-    return getDataForPeriod(HISTORICAL_DATA, days).map(item => ({
+    if (!rawData || !Array.isArray(rawData)) return [];
+    
+    return rawData.map(item => ({
       ...item,
       formattedDate: new Date(item.date).toLocaleDateString('id-ID', { 
         day: '2-digit', 
         month: 'short' 
       })
     }));
-  }, [timeFilter, dateRange]);
+  }, [rawData]);
 
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
@@ -45,12 +46,30 @@ const TrendAnalysis = ({ timeFilter, dateRange }: TrendAnalysisProps) => {
     return null;
   };
 
+  if (isLoading) {
+    return (
+      <Card className="glass">
+        <CardHeader>
+          <CardTitle>Analisis Tren Inventori</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-80 bg-muted animate-pulse rounded-lg" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="glass">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <div className="w-2 h-6 bg-primary rounded-full" />
           Analisis Tren Inventori
+          {isFromApi && (
+            <Badge variant="secondary" className="text-xs bg-success/20 text-success ml-auto">
+              Live Data
+            </Badge>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent>

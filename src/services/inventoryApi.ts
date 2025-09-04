@@ -92,8 +92,8 @@ export class InventoryApiService {
     });
   }
 
-  // Get stock alerts
-  async getStockAlerts(): Promise<any> {
+  // Get product stock alerts  
+  async getProductStockAlerts(): Promise<any> {
     return this.request('/api/products/alerts/low-stock');
   }
 
@@ -119,6 +119,32 @@ export class InventoryApiService {
       };
     }
     return overview;
+  }
+
+  // Analytics endpoints
+  async getAnalyticsTrends(params?: any): Promise<any> {
+    const queryString = params ? '?' + new URLSearchParams(params).toString() : '';
+    return this.request(`/api/analytics/trends${queryString}`);
+  }
+
+  async getCategoryAnalysis(params?: any): Promise<any> {
+    const queryString = params ? '?' + new URLSearchParams(params).toString() : '';
+    return this.request(`/api/analytics/category-analysis${queryString}`);
+  }
+
+  async getStockVelocity(params?: any): Promise<any> {
+    const queryString = params ? '?' + new URLSearchParams(params).toString() : '';
+    return this.request(`/api/analytics/stock-velocity${queryString}`);
+  }
+
+  async getStockAlerts(params?: any): Promise<any> {
+    const queryString = params ? '?' + new URLSearchParams(params).toString() : '';
+    return this.request(`/api/analytics/alerts${queryString}`);
+  }
+
+  async getSmartInsights(params?: any): Promise<any> {
+    const queryString = params ? '?' + new URLSearchParams(params).toString() : '';
+    return this.request(`/api/analytics/insights${queryString}`);
   }
 
   // AI Chat endpoints

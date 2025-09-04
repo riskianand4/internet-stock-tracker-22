@@ -7,39 +7,60 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Zap, AlertTriangle, TrendingUp, Package } from 'lucide-react';
-import { PRODUCT_VELOCITY, formatNumber } from '@/data/mockHistoricalData';
+import { useHybridProducts } from '@/hooks/useHybridData';
+import { useStockVelocity } from '@/hooks/useAnalyticsData';
+import { formatNumber } from '@/data/mockHistoricalData';
+import { TimeFilter, DateRange } from '../AdvancedStatsOverview';
 
-const VelocityAnalysis = () => {
-  const [sortBy, setSortBy] = useState<'turnover' | 'movement' | 'days'>('turnover');
+interface VelocityAnalysisProps {
+  timeFilter: TimeFilter;
+  dateRange: DateRange;
+}
+
+const VelocityAnalysis = ({ timeFilter, dateRange }: VelocityAnalysisProps) => {
+  const { data: products, isLoading: productsLoading } = useHybridProducts();
+  const { data: rawVelocityData, isLoading: velocityLoading, isFromApi } = useStockVelocity();
+  const [sortBy, setSortBy] = useState<'turnoverRate' | 'monthlyMovement' | 'daysUntilOutOfStock'>('turnoverRate');
   const [filterCategory, setFilterCategory] = useState<string>('all');
 
   const velocityData = useMemo(() => {
-    let data = [...PRODUCT_VELOCITY];
+    const sourceData = rawVelocityData || [];
+    if (!products || products.length === 0 || !Array.isArray(sourceData)) return [];
     
-    // Filter by category
-    if (filterCategory !== 'all') {
-      data = data.filter(item => item.category === filterCategory);
-    }
+    // Filter by category if selected
+    const filtered = filterCategory === 'all' ? 
+      sourceData : 
+      sourceData.filter(v => {
+        const product = products.find(p => p.id === v.productId);
+        return product?.category === filterCategory;
+      });
     
-    // Sort data
-    data.sort((a, b) => {
+    // Sort by selected criteria
+    return filtered.sort((a, b) => {
       switch (sortBy) {
-        case 'turnover':
+        case 'turnoverRate':
           return b.turnoverRate - a.turnoverRate;
-        case 'movement':
+        case 'monthlyMovement':
           return b.monthlyMovement - a.monthlyMovement;
-        case 'days':
+        case 'daysUntilOutOfStock':
           return a.daysUntilOutOfStock - b.daysUntilOutOfStock;
         default:
           return 0;
       }
     });
-    
-    return data;
-  }, [sortBy, filterCategory]);
+  }, [rawVelocityData, products, sortBy, filterCategory]);
+
+  const categories = useMemo(() => {
+    if (!products) return ['all'];
+    const cats = Array.from(new Set(products.map(item => item.category)));
+    return ['all', ...cats];
+  }, [products]);
 
   const scatterData = useMemo(() => {
-    return PRODUCT_VELOCITY.map(item => ({
+    const sourceData = rawVelocityData || [];
+    if (!Array.isArray(sourceData)) return [];
+    
+    return sourceData.map(item => ({
       x: item.monthlyMovement,
       y: item.turnoverRate,
       z: item.daysUntilOutOfStock,
@@ -47,12 +68,7 @@ const VelocityAnalysis = () => {
       category: item.category,
       reorderRecommended: item.reorderRecommended
     }));
-  }, []);
-
-  const categories = useMemo(() => {
-    const cats = Array.from(new Set(PRODUCT_VELOCITY.map(item => item.category)));
-    return ['all', ...cats];
-  }, []);
+  }, [rawVelocityData]);
 
   const getVelocityColor = (rate: number) => {
     if (rate > 50) return 'success';
@@ -89,37 +105,53 @@ const VelocityAnalysis = () => {
     return null;
   };
 
+  if (productsLoading || velocityLoading) {
+    return (
+      <Card className="glass">
+        <CardHeader>
+          <CardTitle>Analisis Velocity Produk</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-64 bg-muted animate-pulse rounded-lg" />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="glass">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="w-5 h-5 text-warning" />
-            Analisis Kecepatan Produk
-          </CardTitle>
-          <div className="flex items-center gap-2">
-            <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter kategori" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Kategori</SelectItem>
-                {categories.slice(1).map(cat => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="turnover">Turnover Rate</SelectItem>
-                <SelectItem value="movement">Pergerakan</SelectItem>
-                <SelectItem value="days">Hari Tersisa</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <CardTitle className="flex items-center gap-2">
+          <div className="w-2 h-6 bg-success rounded-full" />
+          Analisis Velocity Produk
+          {isFromApi && (
+            <Badge variant="secondary" className="text-xs bg-success/20 text-success ml-auto">
+              Live Data
+            </Badge>
+          )}
+        </CardTitle>
+        <div className="flex items-center gap-2">
+          <Select value={filterCategory} onValueChange={setFilterCategory}>
+            <SelectTrigger className="w-48">
+              <SelectValue placeholder="Filter kategori" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Kategori</SelectItem>
+              {categories.slice(1).map(cat => (
+                <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={sortBy} onValueChange={(value: any) => setSortBy(value)}>
+            <SelectTrigger className="w-40">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="turnoverRate">Turnover Rate</SelectItem>
+              <SelectItem value="monthlyMovement">Pergerakan</SelectItem>
+              <SelectItem value="daysUntilOutOfStock">Hari Tersisa</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </CardHeader>
       <CardContent className="space-y-6">

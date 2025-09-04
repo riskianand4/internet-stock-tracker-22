@@ -4,8 +4,10 @@ import { TrendingUp, TrendingDown, Package, DollarSign, AlertTriangle, BarChart3
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { HISTORICAL_DATA, getDataForPeriod, calculateGrowthRate, formatCurrency, formatNumber } from '@/data/mockHistoricalData';
+import { formatCurrency, formatNumber, calculateGrowthRate } from '@/data/mockHistoricalData';
 import { TimeFilter, DateRange } from '../AdvancedStatsOverview';
+import { useAnalyticsOverview } from '@/hooks/useAnalyticsData';
+import type { AnalyticsOverview } from '@/types/analytics';
 
 interface KPIDashboardProps {
   timeFilter: TimeFilter;
@@ -13,41 +15,25 @@ interface KPIDashboardProps {
 }
 
 const KPIDashboard = ({ timeFilter, dateRange }: KPIDashboardProps) => {
-  const analytics = useMemo(() => {
-    const days = timeFilter === 'week' ? 7 : 
-                 timeFilter === 'month' ? 30 :
-                 timeFilter === 'quarter' ? 90 :
-                 timeFilter === 'year' ? 365 : 30;
-                 
-    const currentData = getDataForPeriod(HISTORICAL_DATA, days);
-    const previousData = getDataForPeriod(HISTORICAL_DATA, days * 2).slice(0, days);
-    
-    const current = currentData[currentData.length - 1] || HISTORICAL_DATA[HISTORICAL_DATA.length - 1];
-    const previous = previousData[previousData.length - 1] || HISTORICAL_DATA[0];
-    
-    const avgCurrentValue = currentData.reduce((sum, d) => sum + d.totalValue, 0) / currentData.length;
-    const avgPreviousValue = previousData.reduce((sum, d) => sum + d.totalValue, 0) / previousData.length;
-    
-    const totalStockMovements = currentData.reduce((sum, d) => sum + d.stockMovements, 0);
-    const avgStockMovements = totalStockMovements / currentData.length;
-    
-    return {
-      totalProducts: current.totalProducts,
-      totalValue: avgCurrentValue,
-      totalValueGrowth: calculateGrowthRate(avgCurrentValue, avgPreviousValue),
-      lowStockCount: current.lowStockCount,
-      outOfStockCount: current.outOfStockCount,
-      stockMovements: totalStockMovements,
-      avgDailyMovements: avgStockMovements,
-      turnoverRate: (avgStockMovements / current.totalProducts) * 100,
-      stockHealth: Math.max(0, 100 - (current.lowStockCount * 10) - (current.outOfStockCount * 20))
-    };
-  }, [timeFilter, dateRange]);
+  const { data: analytics, isLoading, isFromApi, error } = useAnalyticsOverview(timeFilter);
+
+  // Provide default values if analytics data is not available
+  const safeAnalytics: AnalyticsOverview = analytics || {
+    totalProducts: 0,
+    totalValue: 0,
+    totalValueGrowth: 0,
+    lowStockCount: 0,
+    outOfStockCount: 0,
+    stockMovements: 0,
+    avgDailyMovements: 0,
+    turnoverRate: 0,
+    stockHealth: 0
+  };
 
   const kpiCards = [
     {
       title: 'Total Produk',
-      value: analytics.totalProducts,
+      value: safeAnalytics.totalProducts,
       format: 'number',
       icon: Package,
       color: 'primary',
@@ -55,30 +41,40 @@ const KPIDashboard = ({ timeFilter, dateRange }: KPIDashboardProps) => {
     },
     {
       title: 'Nilai Total Inventori',
-      value: analytics.totalValue,
+      value: safeAnalytics.totalValue,
       format: 'currency',
       icon: DollarSign,
       color: 'success',
-      growth: analytics.totalValueGrowth,
-      subtitle: `${analytics.totalValueGrowth > 0 ? 'Naik' : 'Turun'} dari periode sebelumnya`
+      growth: safeAnalytics.totalValueGrowth,
+      subtitle: `${safeAnalytics.totalValueGrowth > 0 ? 'Naik' : 'Turun'} dari periode sebelumnya`
     },
     {
       title: 'Pergerakan Stok',
-      value: analytics.stockMovements,
+      value: safeAnalytics.stockMovements,
       format: 'number',
       icon: BarChart3,
       color: 'accent',
-      subtitle: `${formatNumber(analytics.avgDailyMovements)} per hari rata-rata`
+      subtitle: `${formatNumber(safeAnalytics.avgDailyMovements)} per hari rata-rata`
     },
     {
       title: 'Status Stok',
-      value: analytics.stockHealth,
+      value: safeAnalytics.stockHealth,
       format: 'percentage',
       icon: AlertTriangle,
-      color: analytics.stockHealth > 80 ? 'success' : analytics.stockHealth > 60 ? 'warning' : 'destructive',
-      subtitle: `${analytics.lowStockCount} rendah, ${analytics.outOfStockCount} habis`
+      color: safeAnalytics.stockHealth > 80 ? 'success' : safeAnalytics.stockHealth > 60 ? 'warning' : 'destructive',
+      subtitle: `${safeAnalytics.lowStockCount} rendah, ${safeAnalytics.outOfStockCount} habis`
     }
   ];
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-40 bg-muted animate-pulse rounded-lg" />
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
@@ -95,7 +91,14 @@ const KPIDashboard = ({ timeFilter, dateRange }: KPIDashboardProps) => {
                 <CardTitle className="text-sm font-medium text-muted-foreground">
                   {card.title}
                 </CardTitle>
-                <card.icon className={`w-5 h-5 text-${card.color}`} />
+                <div className="flex items-center gap-2">
+                  <card.icon className={`w-5 h-5 text-${card.color}`} />
+                  {isFromApi && (
+                    <Badge variant="secondary" className="text-xs bg-success/20 text-success">
+                      Live
+                    </Badge>
+                  )}
+                </div>
               </div>
             </CardHeader>
             <CardContent>
