@@ -20,28 +20,28 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ user, onStartTour }) => {
       description: 'Browse product catalog and check availability',
       icon: Package,
       href: '/products',
-      color: 'bg-blue-50 hover:bg-blue-100 border-blue-200'
+      color: 'bg-primary/10 hover:bg-primary/20 border-primary/20 dark:bg-primary/20 dark:hover:bg-primary/30'
     },
     {
       title: 'Check Analytics',
       description: 'View sales trends and inventory insights',
       icon: BarChart3,
       href: '/stats',
-      color: 'bg-green-50 hover:bg-green-100 border-green-200'
+      color: 'bg-success/10 hover:bg-success/20 border-success/20 dark:bg-success/20 dark:hover:bg-success/30'
     },
     {
       title: 'Generate Reports',
       description: 'Create detailed inventory reports',
       icon: FileText,
       href: '/reports',
-      color: 'bg-purple-50 hover:bg-purple-100 border-purple-200'
+      color: 'bg-accent/10 hover:bg-accent/20 border-accent/20 dark:bg-accent/20 dark:hover:bg-accent/30'
     },
     {
       title: 'View Alerts',
       description: 'Check stock alerts and notifications',
       icon: AlertTriangle,
       href: '/alerts',
-      color: 'bg-orange-50 hover:bg-orange-100 border-orange-200'
+      color: 'bg-warning/10 hover:bg-warning/20 border-warning/20 dark:bg-warning/20 dark:hover:bg-warning/30'
     }
   ];
 
