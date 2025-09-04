@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -24,6 +24,8 @@ export default function UsersPage() {
   const [selectedRole, setSelectedRole] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedDepartment, setSelectedDepartment] = useState('all');
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<any>(null);
 
   // Only super_admin can access this page
   if (user?.role !== 'super_admin') {
@@ -397,10 +399,8 @@ export default function UsersPage() {
                                   variant="ghost" 
                                   size="sm"
                                   onClick={() => {
-                                    if (window.confirm(`Apakah Anda yakin ingin menghapus user "${userData.name}"?`)) {
-                                      console.log('Delete user:', userData);
-                                      // Delete user
-                                    }
+                                    setUserToDelete(userData);
+                                    setDeleteDialogOpen(true);
                                   }}
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -512,6 +512,35 @@ export default function UsersPage() {
             </TabsContent>
           </Tabs>
         </motion.div>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Konfirmasi Hapus User</DialogTitle>
+              <DialogDescription>
+                Apakah Anda yakin ingin menghapus user "{userToDelete?.name}"? 
+                Tindakan ini tidak dapat dibatalkan dan akan menghapus semua data yang terkait dengan user ini.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+                Batal
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => {
+                  console.log('Delete user:', userToDelete);
+                  // Delete user implementation here
+                  setDeleteDialogOpen(false);
+                  setUserToDelete(null);
+                }}
+              >
+                Hapus User
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </MainLayout>
   );

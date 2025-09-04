@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useState } from 'react';
 // @ts-ignore - react-window types issue
 import { FixedSizeList } from 'react-window';
 import { motion } from 'framer-motion';
@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -36,7 +37,7 @@ interface TableRowProps {
     onSelectionChange: (selected: string[]) => void;
     onView?: (product: Product) => void;
     onEdit?: (product: Product) => void;
-    onDelete?: (product: Product) => void;
+    onDeleteClick?: (product: Product) => void;
   };
 }
 
@@ -75,7 +76,7 @@ const formatDate = (date: string | Date) => {
 
 // Table row component with memo
 const TableRow = memo<TableRowProps>(({ index, style, data }) => {
-  const { products, selectedProducts, onSelectionChange, onView, onEdit, onDelete } = data;
+  const { products, selectedProducts, onSelectionChange, onView, onEdit, onDeleteClick } = data;
   const product = products[index];
   const isSelected = selectedProducts.includes(product.id);
   const statusConfig = getStatusConfig(product.status);
@@ -90,11 +91,7 @@ const TableRow = memo<TableRowProps>(({ index, style, data }) => {
 
   const handleView = () => onView?.(product);
   const handleEdit = () => onEdit?.(product);
-  const handleDelete = () => {
-    if (window.confirm(`Hapus "${product.name}"?`)) {
-      onDelete?.(product);
-    }
-  };
+  const handleDelete = () => onDeleteClick?.(product);
 
   return (
     <div 
@@ -304,6 +301,21 @@ export const VirtualizedProductTable = memo<VirtualizedTableProps>(({
   onDelete,
   height = 600
 }) => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+
+  const handleDeleteClick = (product: Product) => {
+    setProductToDelete(product);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (productToDelete && onDelete) {
+      onDelete(productToDelete);
+    }
+    setDeleteDialogOpen(false);
+    setProductToDelete(null);
+  };
   // Memoized data for virtual list
   const itemData = useMemo(() => ({
     products,
@@ -311,8 +323,8 @@ export const VirtualizedProductTable = memo<VirtualizedTableProps>(({
     onSelectionChange,
     onView,
     onEdit,
-    onDelete,
-  }), [products, selectedProducts, onSelectionChange, onView, onEdit, onDelete]);
+    onDeleteClick: handleDeleteClick,
+  }), [products, selectedProducts, onSelectionChange, onView, onEdit]);
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
@@ -383,6 +395,27 @@ export const VirtualizedProductTable = memo<VirtualizedTableProps>(({
         >
           {TableRow}
         </FixedSizeList>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Konfirmasi Hapus Produk</DialogTitle>
+              <DialogDescription>
+                Apakah Anda yakin ingin menghapus produk "{productToDelete?.name}"? 
+                Tindakan ini tidak dapat dibatalkan.
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+                Batal
+              </Button>
+              <Button variant="destructive" onClick={handleDeleteConfirm}>
+                Hapus
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </Card>
     </motion.div>
   );

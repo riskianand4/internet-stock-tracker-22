@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { MoreVertical, Edit, Trash2, Eye, ArrowUpDown } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -27,9 +28,14 @@ interface ProductTableProps {
   onSelectionChange: (selected: string[]) => void;
   onView?: (product: Product) => void;
   onEdit?: (product: Product) => void;
+  onDelete?: (product: Product) => void;
 }
 
-const ProductTable = ({ products, selectedProducts, onSelectionChange, onView, onEdit }: ProductTableProps) => {
+const ProductTable = ({ products, selectedProducts, onSelectionChange, onView, onEdit, onDelete }: ProductTableProps) => {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [productDetail, setProductDetail] = useState<Product | null>(null);
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
       onSelectionChange(products.map(p => p.id));
@@ -77,22 +83,33 @@ const ProductTable = ({ products, selectedProducts, onSelectionChange, onView, o
 
   // Action handlers
   const handleViewProduct = (product: Product) => {
-    onView?.(product);
+    if (onView) {
+      onView(product);
+    } else {
+      setProductDetail(product);
+      setDetailDialogOpen(true);
+    }
   };
 
   const handleEditProduct = (product: Product) => {
     onEdit?.(product);
   };
 
-  const handleDeleteProduct = (product: Product) => {
-    if (window.confirm(`Apakah Anda yakin ingin menghapus "${product.name}"?`)) {
-      console.log('Delete product:', product);
-      // In a real app, this would call an API to delete the product
+  const handleDeleteClick = (product: Product) => {
+    setProductToDelete(product);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (productToDelete && onDelete) {
+      onDelete(productToDelete);
       // Remove from local selection if selected
-      if (selectedProducts.includes(product.id)) {
-        onSelectionChange(selectedProducts.filter(id => id !== product.id));
+      if (selectedProducts.includes(productToDelete.id)) {
+        onSelectionChange(selectedProducts.filter(id => id !== productToDelete.id));
       }
     }
+    setDeleteDialogOpen(false);
+    setProductToDelete(null);
   };
 
   return (
@@ -269,13 +286,13 @@ const ProductTable = ({ products, selectedProducts, onSelectionChange, onView, o
                            Edit Produk
                          </DropdownMenuItem>
                          <DropdownMenuSeparator />
-                         <DropdownMenuItem 
-                           onClick={() => handleDeleteProduct(product)}
-                           className="text-destructive focus:text-destructive"
-                         >
-                           <Trash2 className="mr-2 h-4 w-4" />
-                           Hapus Produk
-                         </DropdownMenuItem>
+                          <DropdownMenuItem 
+                            onClick={() => handleDeleteClick(product)}
+                            className="text-destructive focus:text-destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Hapus Produk
+                          </DropdownMenuItem>
                        </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -291,6 +308,123 @@ const ProductTable = ({ products, selectedProducts, onSelectionChange, onView, o
           Tidak ada produk untuk ditampilkan
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Konfirmasi Hapus Produk</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menghapus produk "{productToDelete?.name}"? 
+              Tindakan ini tidak dapat dibatalkan.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteConfirm}>
+              Hapus
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detail View Dialog */}
+      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Detail Produk</DialogTitle>
+            <DialogDescription>
+              Informasi lengkap produk
+            </DialogDescription>
+          </DialogHeader>
+          {productDetail && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Nama Produk</label>
+                  <p className="font-medium">{productDetail.name}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">SKU</label>
+                  <p className="font-mono text-sm">{productDetail.sku}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Kategori</label>
+                  <p>{productDetail.category}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Status</label>
+                  <Badge 
+                    variant={getStatusColor(productDetail.status) === 'success' ? 'default' : 'secondary'}
+                    className={`text-xs ${
+                      getStatusColor(productDetail.status) === 'warning' ? 'bg-warning text-warning-foreground' :
+                      getStatusColor(productDetail.status) === 'destructive' ? 'bg-destructive text-destructive-foreground' : ''
+                    }`}
+                  >
+                    {getStatusLabel(productDetail.status)}
+                  </Badge>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Harga</label>
+                  <p className="font-bold">{formatCurrency(productDetail.price)}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Stok Saat Ini</label>
+                  <p className="font-medium">{productDetail.stock}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Minimum Stok</label>
+                  <p className="font-medium">{productDetail.minStock}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Lokasi</label>
+                  <p>{productDetail.location || '-'}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Supplier</label>
+                  <p>{productDetail.supplier || '-'}</p>
+                </div>
+              </div>
+              
+              {productDetail.description && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Deskripsi</label>
+                  <p className="text-sm">{productDetail.description}</p>
+                </div>
+              )}
+              
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Terakhir Diupdate</label>
+                <p className="text-sm">
+                  {new Date(productDetail.lastUpdated).toLocaleDateString('id-ID', {
+                    day: '2-digit',
+                    month: 'long',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })}
+                </p>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setDetailDialogOpen(false)}>
+              Tutup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
