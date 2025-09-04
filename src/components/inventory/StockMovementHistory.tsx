@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ArrowUpCircle, ArrowDownCircle, RefreshCw, ArrowRightLeft, Calendar, Search, Filter, Download, Edit, Trash2, Eye } from 'lucide-react';
 import { useStockMovement } from '@/hooks/useStockMovement';
 import { StockMovement } from '@/types/stock-movement';
@@ -21,6 +22,10 @@ const StockMovementHistory = () => {
   const [dateFilter, setDateFilter] = useState<string>('ALL');
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedMovement, setSelectedMovement] = useState<StockMovement | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [movementToDelete, setMovementToDelete] = useState<string | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [movementDetail, setMovementDetail] = useState<StockMovement | null>(null);
   
   const stats = getMovementStats();
 
@@ -29,10 +34,22 @@ const StockMovementHistory = () => {
     setEditModalOpen(true);
   };
 
-  const handleDelete = async (movementId: string) => {
-    if (window.confirm('Apakah Anda yakin ingin menghapus transaksi ini?')) {
-      await deleteMovement(movementId);
+  const handleDeleteClick = (movementId: string) => {
+    setMovementToDelete(movementId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (movementToDelete) {
+      await deleteMovement(movementToDelete);
+      setDeleteDialogOpen(false);
+      setMovementToDelete(null);
     }
+  };
+
+  const handleViewDetail = (movement: StockMovement) => {
+    setMovementDetail(movement);
+    setDetailDialogOpen(true);
   };
 
   const handleUpdate = async (updatedMovement: StockMovement) => {
@@ -320,7 +337,7 @@ const StockMovementHistory = () => {
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          onClick={() => {}}
+                          onClick={() => handleViewDetail(movement)}
                         >
                           <Eye className="w-4 h-4" />
                         </Button>
@@ -336,7 +353,7 @@ const StockMovementHistory = () => {
                             <Button 
                               variant="ghost" 
                               size="sm"
-                              onClick={() => handleDelete(movement.id)}
+                              onClick={() => handleDeleteClick(movement.id)}
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
@@ -369,6 +386,121 @@ const StockMovementHistory = () => {
         movement={selectedMovement}
         onUpdate={handleUpdate}
       />
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Konfirmasi Hapus</DialogTitle>
+            <DialogDescription>
+              Apakah Anda yakin ingin menghapus transaksi stock movement ini? 
+              Tindakan ini tidak dapat dibatalkan.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Batal
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteConfirm}>
+              Hapus
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Detail View Dialog */}
+      <Dialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Detail Stock Movement</DialogTitle>
+            <DialogDescription>
+              Informasi lengkap transaksi stock movement
+            </DialogDescription>
+          </DialogHeader>
+          {movementDetail && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Tanggal & Waktu</label>
+                  <p className="text-sm font-mono">
+                    {format(new Date(movementDetail.timestamp), 'dd MMMM yyyy, HH:mm:ss')}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Tipe Transaksi</label>
+                  <div className="flex items-center gap-2 mt-1">
+                    {getMovementIcon(movementDetail.type)}
+                    {getMovementBadge(movementDetail.type)}
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Nama Produk</label>
+                  <p className="font-medium">{movementDetail.productName}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Kode Produk</label>
+                  <p className="font-mono text-sm">{movementDetail.productCode}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Jumlah</label>
+                  <p className={`font-bold ${movementDetail.type === 'OUT' ? 'text-red-600' : 'text-green-600'}`}>
+                    {movementDetail.type === 'OUT' ? '-' : '+'}{movementDetail.quantity}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Stock Sebelum</label>
+                  <p className="font-medium">{movementDetail.previousStock}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Stock Sesudah</label>
+                  <p className="font-medium">{movementDetail.newStock}</p>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Lokasi</label>
+                  <p>{movementDetail.location}</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">User</label>
+                  <p>{movementDetail.userName}</p>
+                </div>
+              </div>
+              
+              <div>
+                <label className="text-sm font-medium text-muted-foreground">Alasan</label>
+                <p>{movementDetail.reason}</p>
+              </div>
+              
+              {movementDetail.reference && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Referensi</label>
+                  <p className="font-mono text-sm">{movementDetail.reference}</p>
+                </div>
+              )}
+              
+              {movementDetail.notes && (
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground">Catatan</label>
+                  <p className="text-sm">{movementDetail.notes}</p>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setDetailDialogOpen(false)}>
+              Tutup
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
