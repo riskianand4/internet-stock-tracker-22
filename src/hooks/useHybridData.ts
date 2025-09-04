@@ -3,6 +3,8 @@ import { useApi } from '@/contexts/ApiContext';
 import { useToast } from '@/hooks/use-toast';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { Product } from '@/types/inventory';
+import { DUMMY_PRODUCTS } from '@/data/dummyProducts';
+import { mockStockMovements } from '@/data/mockStockMovements';
 
 interface UseHybridDataOptions {
   localData: any;
@@ -160,8 +162,6 @@ export function useHybridData<T>({
 
 // Specialized hooks for common use cases
 export function useHybridProducts(): UseHybridDataReturn<Product[]> {
-  const { DUMMY_PRODUCTS } = require('@/data/dummyProducts');
-  
   return useHybridData<Product[]>({
     localData: DUMMY_PRODUCTS,
     apiEndpoint: '/api/products',
@@ -170,8 +170,6 @@ export function useHybridProducts(): UseHybridDataReturn<Product[]> {
 }
 
 export function useHybridStockMovements() {
-  const { mockStockMovements } = require('@/data/mockStockMovements');
-  
   return useHybridData({
     localData: mockStockMovements,
     apiEndpoint: '/api/stock/movements',
@@ -190,7 +188,6 @@ export function useHybridInventoryStats() {
     },
     localFunction: () => {
       // Calculate from local data
-      const { DUMMY_PRODUCTS } = require('@/data/dummyProducts');
       return {
         totalProducts: DUMMY_PRODUCTS.length,
         totalValue: DUMMY_PRODUCTS.reduce((sum: number, p: any) => sum + (p.price * p.stock), 0),
