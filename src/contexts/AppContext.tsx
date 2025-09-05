@@ -1,7 +1,7 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useAuthManager } from '@/hooks/useAuthManager';
-import { InventoryApiService } from '@/services/inventoryApi';
-import { toast } from 'sonner';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { useAuthManager } from "@/hooks/useAuthManager";
+import { InventoryApiService } from "@/services/inventoryApi";
+import { toast } from "sonner";
 
 interface AppConfig {
   apiEnabled: boolean;
@@ -23,15 +23,15 @@ interface AppContextType {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   refreshAuth: () => Promise<boolean>;
-  
+
   // App configuration
   config: AppConfig;
   setConfig: (config: Partial<AppConfig>) => void;
-  
+
   // Connection status
   connectionStatus: ConnectionStatus;
   testConnection: () => Promise<boolean>;
-  
+
   // Legacy compatibility properties
   apiService: any;
   isConfigured: boolean;
@@ -44,20 +44,22 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const useApp = () => {
   const context = useContext(AppContext);
   if (context === undefined) {
-    throw new Error('useApp must be used within an AppProvider');
+    throw new Error("useApp must be used within an AppProvider");
   }
   return context;
 };
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const authManager = useAuthManager();
-  
+
   const [apiService] = useState(() => new InventoryApiService());
-  
+
   const [config, setConfigState] = useState<AppConfig>({
     apiEnabled: true,
-    baseURL: 'http://localhost:3001',
-    version: '1.0.0',
+    baseURL: "http://localhost:3001",
+    version: "1.0.0",
   });
 
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
@@ -69,28 +71,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const setConfig = (newConfig: Partial<AppConfig>) => {
     const updatedConfig = { ...config, ...newConfig };
     setConfigState(updatedConfig);
-    localStorage.setItem('app-config', JSON.stringify(updatedConfig));
+    localStorage.setItem("app-config", JSON.stringify(updatedConfig));
   };
 
   const testConnection = async (): Promise<boolean> => {
     try {
       const response = await apiService.healthCheck();
       const isOnline = response.success;
-      
+
       setConnectionStatus({
         isOnline,
         lastCheck: new Date(),
-        error: isOnline ? null : 'Health check failed',
+        error: isOnline ? null : "Health check failed",
       });
-      
+
       return isOnline;
     } catch (error) {
       setConnectionStatus({
         isOnline: false,
         lastCheck: new Date(),
-        error: error instanceof Error ? error.message : 'Connection failed',
+        error: error instanceof Error ? error.message : "Connection failed",
       });
-      
+
       return false;
     }
   };
@@ -98,24 +100,33 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const clearConfig = () => {
     setConfigState({
       apiEnabled: false,
-      baseURL: 'http://localhost:3001',
-      version: '1.0.0',
+      baseURL: "http://localhost:3001",
+      version: "1.0.0",
     });
-    localStorage.removeItem('app-config');
+    localStorage.removeItem("app-config");
   };
+
+  useEffect(() => {
+    testConnection();
+    const interval = setInterval(() => {
+      testConnection();
+    }, 60000);
+
+    return () => clearInterval(interval); // bersihin saat unmount
+  }, []);
 
   const value: AppContextType = {
     // Auth methods from useAuthManager
     ...authManager,
-    
+
     // App configuration
     config,
     setConfig,
-    
+
     // Connection status
     connectionStatus,
     testConnection,
-    
+
     // Legacy compatibility properties
     apiService,
     isConfigured: config.apiEnabled,

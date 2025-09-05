@@ -30,13 +30,19 @@ connectDB();
 app.use(helmet());
 app.use(compression());
 
-// Rate limiting
+
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  max: 100,
   message: "Too many requests from this IP, please try again later.",
 });
-app.use(limiter);
+
+app.use((req, res, next) => {
+  if (req.path === "/health") {
+    return next(); 
+  }
+  return limiter(req, res, next);
+});
 
 // CORS configuration
 app.use(
@@ -48,16 +54,14 @@ app.use(
   })
 );
 
+app.options("*", cors());
+
 // Body parsing middleware
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 
 // Logging
 app.use(morgan("combined"));
-app.use("/api/auth", authRoutes);
-// Enhanced API Key authentication and rate limiting
-app.use("/api", apiKeyAuth(["read"]), apiKeyRateLimit());
-
 // Health check
 app.get("/health", (req, res) => {
   res.status(200).json({
@@ -67,16 +71,34 @@ app.get("/health", (req, res) => {
     version: process.env.npm_package_version || "1.0.0",
   });
 });
-
 // API Routes
-app.use("/api/products", productRoutes);
-app.use("/api/stock", stockRoutes);
-app.use("/api/assets", assetRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/analytics", analyticsRoutes);
-app.use("/api/reports", reportRoutes);
-app.use("/api/admin/api-keys", apiKeyRoutes);
-app.use("/api/ai", aiRoutes);
+// Auth routes bebas dari API Key
+app.use("/api/auth", authRoutes);
+
+// Semua route lain pakai API key + rate limit
+app.use(
+  "/api/products",
+  apiKeyAuth(["read"]),
+  apiKeyRateLimit(),
+  productRoutes
+);
+app.use("/api/stock", apiKeyAuth(["read"]), apiKeyRateLimit(), stockRoutes);
+app.use("/api/assets", apiKeyAuth(["read"]), apiKeyRateLimit(), assetRoutes);
+app.use("/api/users", apiKeyAuth(["read"]), apiKeyRateLimit(), userRoutes);
+app.use(
+  "/api/analytics",
+  apiKeyAuth(["read"]),
+  apiKeyRateLimit(),
+  analyticsRoutes
+);
+app.use("/api/reports", apiKeyAuth(["read"]), apiKeyRateLimit(), reportRoutes);
+app.use(
+  "/api/admin/api-keys",
+  apiKeyAuth(["admin"]),
+  apiKeyRateLimit(),
+  apiKeyRoutes
+);
+app.use("/api/ai", apiKeyAuth(["read"]), apiKeyRateLimit(), aiRoutes);
 
 // 404 handler
 app.use("*", (req, res) => {
