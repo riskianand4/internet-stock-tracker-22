@@ -7,6 +7,18 @@ export interface ApiResponse<T = any> {
   error?: string;
 }
 
+export interface LoginResponse extends ApiResponse {
+  token?: string;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    department?: string;
+    permissions?: string[];
+  };
+}
+
 export interface ApiClientConfig {
   baseURL: string;
   timeout: number;
@@ -172,9 +184,12 @@ export class ApiClient {
     return this.get(API_ENDPOINTS.HEALTH);
   }
 
-  // Auth methods
-  async login(email: string, password: string): Promise<ApiResponse> {
-    return this.post(API_ENDPOINTS.AUTH.LOGIN, { email, password });
+  // Auth methods (disable retry for auth)
+  async login(email: string, password: string): Promise<LoginResponse> {
+    return this.makeRequest(API_ENDPOINTS.AUTH.LOGIN, {
+      method: 'POST',
+      body: JSON.stringify({ email, password })
+    }, 1); // Single attempt, no retries
   }
 
   async refreshToken(): Promise<ApiResponse> {

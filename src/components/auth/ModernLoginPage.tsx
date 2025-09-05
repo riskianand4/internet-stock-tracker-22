@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
-import { toast } from '@/hooks/use-toast';
+
 import { Loader2, Wifi, Eye, EyeOff, Shield, Lock, User, Mail, CheckCircle2, ArrowRight } from 'lucide-react';
 const ModernLoginPage = () => {
   const [email, setEmail] = useState('');
@@ -45,26 +45,9 @@ const ModernLoginPage = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      toast({
-        title: "Form Incomplete",
-        description: "Email dan password harus diisi",
-        variant: "destructive"
-      });
       return;
     }
-    const success = await login(email, password);
-    if (!success) {
-      toast({
-        title: "Login Gagal",
-        description: "Email atau password salah",
-        variant: "destructive"
-      });
-    } else {
-      toast({
-        title: "Login Berhasil! 🎉",
-        description: "Selamat datang di Sistem Inventory"
-      });
-    }
+    await login(email, password);
   };
   const handleDemoLogin = (demo: typeof demoCredentials[0]) => {
     setEmail(demo.email);

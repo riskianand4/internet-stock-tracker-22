@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { User } from '@/types/auth';
-import { apiClient, ApiClientError } from '@/services/apiClient';
+import { apiClient, ApiClientError, LoginResponse } from '@/services/apiClient';
 import { toast } from 'sonner';
 
 interface AuthState {
@@ -70,22 +70,23 @@ export const useAuthManager = () => {
 
     try {
       const response = await apiClient.login(email, password);
+      console.log('Login response:', response); // Debug logging
 
-      if (response.success && response.data?.token && response.data?.user) {
+      if (response.success && response.token && response.user) {
         const userData: User = {
-          id: response.data.user.id,
-          username: response.data.user.email,
-          email: response.data.user.email,
-          role: response.data.user.role,
-          name: response.data.user.name || response.data.user.email,
+          id: response.user.id,
+          username: response.user.email,
+          email: response.user.email,
+          role: response.user.role as 'user' | 'admin' | 'super_admin',
+          name: response.user.name || response.user.email,
         };
 
         // Save to localStorage
         localStorage.setItem('user', JSON.stringify(userData));
-        localStorage.setItem('auth-token', response.data.token);
+        localStorage.setItem('auth-token', response.token);
         
         // Set token in API client
-        apiClient.setToken(response.data.token);
+        apiClient.setToken(response.token);
 
         setAuthState({
           user: userData,
