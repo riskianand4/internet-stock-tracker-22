@@ -14,16 +14,20 @@ import {
   Search, Plus, Download, Upload, ShoppingCart, TrendingUp, 
   Package, Users, Eye, Edit, Trash2, Filter, Calendar
 } from 'lucide-react';
-import { mockOrders, mockSuppliers, mockCustomers } from '@/data/mockOrders';
+import { useApi } from '@/contexts/ApiContext';
 import { useAuth } from '@/contexts/AuthContext';
 
 export default function OrdersPage() {
   const { user } = useAuth();
+  const { apiService, isConfigured } = useApi();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
+  const [orders, setOrders] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
 
-  const filteredOrders = mockOrders.filter(order => {
+  const filteredOrders = orders.filter(order => {
     const matchesSearch = 
       order.orderNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
       order.supplierName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -61,10 +65,10 @@ export default function OrdersPage() {
     }
   };
 
-  const totalOrders = mockOrders.length;
-  const totalValue = mockOrders.reduce((sum, order) => sum + order.total, 0);
-  const pendingOrders = mockOrders.filter(order => order.status === 'pending').length;
-  const activeSuppliers = mockSuppliers.filter(supplier => supplier.status === 'active').length;
+  const totalOrders = orders.length;
+  const totalValue = orders.reduce((sum, order) => sum + order.total, 0);
+  const pendingOrders = orders.filter(order => order.status === 'pending').length;
+  const activeSuppliers = suppliers.filter(supplier => supplier.status === 'active').length;
 
   return (
     <MainLayout>
@@ -129,10 +133,10 @@ export default function OrdersPage() {
                         <SelectValue placeholder="Pilih supplier atau customer" />
                       </SelectTrigger>
                       <SelectContent>
-                        {mockSuppliers.map(supplier => (
+                        {suppliers.map(supplier => (
                           <SelectItem key={supplier.id} value={supplier.id}>{supplier.name}</SelectItem>
                         ))}
-                        {mockCustomers.map(customer => (
+                        {customers.map(customer => (
                           <SelectItem key={customer.id} value={customer.id}>{customer.name}</SelectItem>
                         ))}
                       </SelectContent>
@@ -361,7 +365,7 @@ export default function OrdersPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {mockSuppliers.map((supplier) => (
+                      {suppliers.map((supplier) => (
                         <TableRow key={supplier.id}>
                           <TableCell className="font-medium">{supplier.name}</TableCell>
                           <TableCell>{supplier.contactPerson}</TableCell>
@@ -421,7 +425,7 @@ export default function OrdersPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {mockCustomers.map((customer) => (
+                      {customers.map((customer) => (
                         <TableRow key={customer.id}>
                           <TableCell className="font-medium">{customer.name}</TableCell>
                           <TableCell>{customer.email}</TableCell>

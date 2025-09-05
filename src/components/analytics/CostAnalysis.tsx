@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,14 +7,32 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { DollarSign, TrendingUp, TrendingDown, Target, BarChart3, PieChart as PieChartIcon } from 'lucide-react';
-import { mockCostAnalysis } from '@/data/mockStockMovements';
+import { stockMovementApi } from '@/services/stockMovementApi';
 import { CostAnalysis as CostAnalysisType } from '@/types/stock-movement';
 
 const CostAnalysis = () => {
   const [analysisType, setAnalysisType] = useState('profit');
   const [timeframe, setTimeframe] = useState('monthly');
   
-  const costData = mockCostAnalysis;
+  const [costData, setCostData] = useState<CostAnalysisType[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchCostAnalysis = async () => {
+      setLoading(true);
+      try {
+        const data = await stockMovementApi.getCostAnalysis();
+        setCostData(data);
+      } catch (error) {
+        console.error('Failed to fetch cost analysis:', error);
+        setCostData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchCostAnalysis();
+  }, []);
 
   const totalMetrics = {
     totalValue: costData.reduce((sum, item) => sum + item.currentValue, 0),

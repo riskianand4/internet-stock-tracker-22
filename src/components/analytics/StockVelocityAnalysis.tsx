@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,14 +7,32 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, TrendingDown, Activity, Clock, AlertCircle, Zap } from 'lucide-react';
-import { mockStockVelocity } from '@/data/mockStockMovements';
+import { stockMovementApi } from '@/services/stockMovementApi';
 import { StockVelocity } from '@/types/stock-movement';
 
 const StockVelocityAnalysis = () => {
   const [timeframe, setTimeframe] = useState('monthly');
   const [sortBy, setSortBy] = useState('velocity');
   
-  const velocityData = mockStockVelocity;
+  const [velocityData, setVelocityData] = useState<StockVelocity[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchStockVelocity = async () => {
+      setLoading(true);
+      try {
+        const data = await stockMovementApi.getStockVelocity();
+        setVelocityData(data);
+      } catch (error) {
+        console.error('Failed to fetch stock velocity:', error);
+        setVelocityData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStockVelocity();
+  }, []);
 
   const getVelocityColor = (velocity: StockVelocity['velocity']) => {
     switch (velocity) {

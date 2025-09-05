@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, ScatterChart, Scatter, Cell } from 'recharts';
 import { AlertTriangle, Brain, TrendingDown, TrendingUp, Zap, Eye } from 'lucide-react';
-import { DUMMY_PRODUCTS } from '@/data/dummyProducts';
-import { PRODUCT_VELOCITY } from '@/data/mockHistoricalData';
+import { useHybridProducts } from '@/hooks/useHybridData';
+import { formatNumber } from '@/lib/formatters';
 import { toast } from '@/hooks/use-toast';
 interface Anomaly {
   id: string;
@@ -26,10 +26,15 @@ interface Anomaly {
 const AnomalyDetection = () => {
   const [selectedAnomaly, setSelectedAnomaly] = useState<Anomaly | null>(null);
   const [autoDetection, setAutoDetection] = useState(true);
+  const { data: products } = useHybridProducts();
+
   const anomalies = useMemo(() => {
     // AI-powered anomaly detection using statistical analysis
     const detectedAnomalies: Anomaly[] = [];
-    PRODUCT_VELOCITY.forEach((product, index) => {
+    
+    if (!products || products.length === 0) return detectedAnomalies;
+    
+    products.forEach((product, index) => {
       // Simulate anomaly detection algorithms
       const dataPoints = Array.from({
         length: 30
@@ -51,9 +56,9 @@ const AnomalyDetection = () => {
           detectedAnomalies.push({
             id: `anomaly-${index}-${i}`,
             type: isSpike ? 'spike' : 'drop',
-            severity: zScore > 3 ? 'critical' : zScore > 2.8 ? 'high' : 'medium',
-            productId: product.productId,
-            productName: product.productName,
+          severity: zScore > 3 ? 'critical' : zScore > 2.8 ? 'high' : 'medium',
+            productId: product.id,
+            productName: product.name,
             description: `${isSpike ? 'Lonjakan' : 'Penurunan'} permintaan yang tidak biasa terdeteksi`,
             detectedAt: new Date(Date.now() - i * 24 * 60 * 60 * 1000),
             confidence: Math.min(95, Math.round(zScore * 25)),
@@ -71,8 +76,8 @@ const AnomalyDetection = () => {
           id: `pattern-${index}`,
           type: 'pattern',
           severity: 'medium',
-          productId: product.productId,
-          productName: product.productName,
+          productId: product.id,
+          productName: product.name,
           description: 'Pola penjualan tidak sesuai dengan tren musiman historis',
           detectedAt: new Date(),
           confidence: 78,
@@ -89,8 +94,8 @@ const AnomalyDetection = () => {
           id: `correlation-${index}`,
           type: 'correlation',
           severity: 'high',
-          productId: product.productId,
-          productName: product.productName,
+          productId: product.id,
+          productName: product.name,
           description: 'Produk terkait menunjukkan korelasi yang tidak biasa',
           detectedAt: new Date(),
           confidence: 82,
@@ -102,7 +107,7 @@ const AnomalyDetection = () => {
       }
     });
     return detectedAnomalies.sort((a, b) => b.confidence - a.confidence).slice(0, 15);
-  }, []);
+  }, [products]);
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'critical':
@@ -213,7 +218,7 @@ const AnomalyDetection = () => {
               <span className="text-sm font-medium">Detection Rate</span>
             </div>
             <div className="text-2xl font-bold">
-              {Math.round(anomalies.length / PRODUCT_VELOCITY.length * 100)}%
+              {products?.length || 0}
             </div>
           </CardContent>
         </Card>

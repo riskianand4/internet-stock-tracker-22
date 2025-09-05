@@ -261,7 +261,7 @@ const ProductTable = ({ products, selectedProducts, onSelectionChange, onView, o
                   
                   <TableCell>
                     <span className="text-xs text-muted-foreground">
-                      {new Date(product.lastUpdated).toLocaleDateString('id-ID', {
+                      {new Date(product.updatedAt).toLocaleDateString('id-ID', {
                         day: '2-digit',
                         month: 'short',
                         year: 'numeric'
@@ -407,7 +407,7 @@ const ProductTable = ({ products, selectedProducts, onSelectionChange, onView, o
               <div>
                 <label className="text-sm font-medium text-muted-foreground">Terakhir Diupdate</label>
                 <p className="text-sm">
-                  {new Date(productDetail.lastUpdated).toLocaleDateString('id-ID', {
+                  {new Date(productDetail.updatedAt).toLocaleDateString('id-ID', {
                     day: '2-digit',
                     month: 'long',
                     year: 'numeric',

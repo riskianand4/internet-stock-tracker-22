@@ -165,7 +165,7 @@ const ProductCard = ({ product, isSelected, onSelect, onView, onEdit }: ProductC
             <div className="flex items-center gap-1">
               <Calendar className="w-3 h-3" />
               <span>
-                {new Date(product.lastUpdated).toLocaleDateString('id-ID', {
+                {new Date(product.updatedAt).toLocaleDateString('id-ID', {
                   day: '2-digit',
                   month: 'short',
                   year: 'numeric'

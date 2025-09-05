@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Brain, AlertTriangle, TrendingUp, Package, Zap, Target } from 'lucide-react';
-import { DUMMY_PRODUCTS } from '@/data/dummyProducts';
-import { formatNumber } from '@/data/mockHistoricalData';
+import { formatNumber } from '@/lib/formatters';
+import { DUMMY_PRODUCTS } from '@/data/constants';
 
 const DemandPrediction = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');

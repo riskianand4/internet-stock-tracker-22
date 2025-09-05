@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Asset, AssetBorrowRequest } from '@/types/assets';
 import { User } from '@/types/users';
 import {
@@ -30,7 +30,7 @@ import { CalendarIcon, User as UserIcon } from 'lucide-react';
 import { format, addDays } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { mockUsers } from '@/data/mockUsers';
+import UserApi from '@/services/userApi';
 
 interface BorrowAssetDialogProps {
   open: boolean;
@@ -56,12 +56,30 @@ export const BorrowAssetDialog: React.FC<BorrowAssetDialogProps> = ({
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // Get available users (excluding super_admin and current PIC)
-  const availableUsers = mockUsers.filter(user => 
-    user.status === 'active' && 
-    user.role !== 'super_admin' &&
-    user.id !== asset?.picId
-  );
+  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoadingUsers(true);
+      try {
+        const users = await UserApi.getAllUsers();
+        const available = users.filter(user => 
+          user.status === 'active' && 
+          user.role !== 'super_admin' &&
+          user.id !== asset?.picId
+        );
+        setAvailableUsers(available);
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+        setAvailableUsers([]);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    fetchUsers();
+  }, [asset?.picId]);
 
   const selectedUser = availableUsers.find(user => user.id === formData.borrowerUserId);
 
@@ -247,11 +265,11 @@ export const BorrowAssetDialog: React.FC<BorrowAssetDialogProps> = ({
           <Button
             variant="outline"
             onClick={() => handleOpenChange(false)}
-            disabled={loading}
+            disabled={loading || loadingUsers}
           >
             Batal
           </Button>
-          <Button onClick={handleBorrow} disabled={loading}>
+          <Button onClick={handleBorrow} disabled={loading || loadingUsers}>
             {loading ? 'Memproses...' : 'Pinjam Asset'}
           </Button>
         </DialogFooter>

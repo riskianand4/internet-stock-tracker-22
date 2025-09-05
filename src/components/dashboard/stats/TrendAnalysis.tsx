@@ -4,7 +4,7 @@ import { AreaChart, Area, LineChart, Line, XAxis, YAxis, CartesianGrid, Responsi
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { formatCurrency, formatNumber } from '@/data/mockHistoricalData';
+import { formatCurrency, formatNumber } from '@/lib/formatters';
 import { TimeFilter, DateRange } from '../AdvancedStatsOverview';
 import { useAnalyticsTrends } from '@/hooks/useAnalyticsData';
 

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, TrendingUp, Snowflake, Sun, Leaf, Cloud } from 'lucide-react';
-import { formatCurrency, formatNumber } from '@/data/mockHistoricalData';
+import { formatCurrency, formatNumber } from '@/lib/formatters';
 
 const SeasonalAnalysis = () => {
   const [analysisType, setAnalysisType] = useState<'monthly' | 'quarterly' | 'weekly'>('monthly');

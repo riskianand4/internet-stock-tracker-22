@@ -129,6 +129,71 @@ router.get('/me', auth, async (req, res) => {
   }
 });
 
+// Refresh token
+router.post('/refresh', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'User not found' 
+      });
+    }
+
+    const token = generateToken(user._id);
+
+    res.json({
+      success: true,
+      message: 'Token refreshed successfully',
+      data: {
+        token,
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role
+        }
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false,
+      error: 'Server error during token refresh' 
+    });
+  }
+});
+
+// Verify token
+router.get('/verify', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(401).json({ 
+        success: false,
+        error: 'User not found' 
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Token is valid',
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role
+        }
+      }
+    });
+  } catch (error) {
+    res.status(401).json({ 
+      success: false,
+      error: 'Invalid token' 
+    });
+  }
+});
+
 // @desc    Update user profile
 // @route   PUT /api/auth/profile
 // @access  Private

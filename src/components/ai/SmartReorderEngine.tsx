@@ -7,9 +7,10 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip, BarChart, Bar } from 'recharts';
 import { Bot, ShoppingCart, Zap, TrendingUp, Calendar, DollarSign, Package, AlertCircle } from 'lucide-react';
-import { DUMMY_PRODUCTS } from '@/data/dummyProducts';
-import { PRODUCT_VELOCITY } from '@/data/mockHistoricalData';
+import { useHybridProducts } from '@/hooks/useHybridData';
+import { formatNumber } from '@/lib/formatters';
 import { toast } from '@/hooks/use-toast';
+import { PRODUCT_VELOCITY, DUMMY_PRODUCTS } from '@/data/constants';
 interface ReorderRecommendation {
   id: string;
   productId: string;
@@ -108,8 +109,8 @@ const SmartReorderEngine = () => {
       if (recommendedOrder > 0) {
         recommendations.push({
           id: `reorder-${index}`,
-          productId: product.id,
-          productName: product.name,
+        productId: product.id,
+        productName: product.name,
           currentStock: product.stock,
           recommendedOrder,
           urgency,

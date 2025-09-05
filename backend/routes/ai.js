@@ -1,7 +1,7 @@
 const express = require('express');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const { body, validationResult } = require('express-validator');
-const auth = require('../middleware/auth');
+const {auth} = require('../middleware/auth');
 const Product = require('../models/Product');
 const StockMovement = require('../models/StockMovement');
 

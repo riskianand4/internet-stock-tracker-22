@@ -9,10 +9,11 @@ export interface Product {
   minStock: number;
   description?: string;
   image?: string;
-  lastUpdated?: Date;
   status: 'in_stock' | 'low_stock' | 'out_of_stock';
   location?: string;
   supplier?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface StockMovement {

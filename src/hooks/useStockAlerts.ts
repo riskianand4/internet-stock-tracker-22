@@ -1,12 +1,40 @@
 import { useState, useEffect, useCallback } from 'react';
 import { StockAlert } from '@/types/stock-movement';
-import { mockStockAlerts } from '@/data/mockStockMovements';
+import { stockMovementApi } from '@/services/stockMovementApi';
 import { useToast } from '@/hooks/use-toast';
+import { useApi } from '@/contexts/ApiContext';
 
 export const useStockAlerts = () => {
-  const [alerts, setAlerts] = useState<StockAlert[]>(mockStockAlerts);
+  const [alerts, setAlerts] = useState<StockAlert[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { isConfigured, isOnline } = useApi();
+
+  const fetchAlerts = useCallback(async () => {
+    if (!isConfigured || !isOnline) {
+      setAlerts([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await stockMovementApi.getStockAlerts();
+      setAlerts(data);
+    } catch (error) {
+      console.error('Failed to fetch stock alerts:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch stock alerts",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [isConfigured, isOnline, toast]);
+
+  useEffect(() => {
+    fetchAlerts();
+  }, [fetchAlerts]);
 
   const acknowledgeAlert = useCallback(async (alertId: string, acknowledgedBy: string) => {
     setLoading(true);

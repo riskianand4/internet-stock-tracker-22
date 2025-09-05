@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useHybridProducts } from '@/hooks/useHybridData';
 import { useCategoryAnalysis } from '@/hooks/useAnalyticsData';
-import { formatCurrency, formatNumber } from '@/data/mockHistoricalData';
+import { formatCurrency, formatNumber } from '@/lib/formatters';
 import { TimeFilter, DateRange } from '../AdvancedStatsOverview';
 
 interface CategoryAnalysisProps {

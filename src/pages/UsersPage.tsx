@@ -15,11 +15,14 @@ import {
   Search, Plus, Download, Upload, Users, UserCheck, 
   UserX, Shield, Eye, Edit, Trash2, Activity, Lock, Unlock
 } from 'lucide-react';
-import { mockUsers, mockUserActivities, mockRoles } from '@/data/mockUsers';
-import { useAuth } from '@/contexts/AuthContext';
+import { useApp } from '@/contexts/AppContext';
+import { useUsers } from '@/hooks/useApiData';
+import ModernLoginPage from '@/components/auth/ModernLoginPage';
+import { ErrorBoundary } from '@/components/feedback/ErrorBoundary';
 
 export default function UsersPage() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useApp();
+  const { users, loading, error } = useUsers();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedRole, setSelectedRole] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
@@ -28,9 +31,14 @@ export default function UsersPage() {
   const [userToDelete, setUserToDelete] = useState<any>(null);
 
   // Only super_admin can access this page
+  if (!isAuthenticated || !user) {
+    return <ModernLoginPage />;
+  }
+  
   if (user?.role !== 'super_admin') {
     return (
-      <MainLayout>
+      <ErrorBoundary>
+        <MainLayout>
         <div className="flex items-center justify-center h-96">
           <div className="text-center">
             <Shield className="w-16 h-16 text-muted-foreground mb-4 mx-auto" />
@@ -39,21 +47,30 @@ export default function UsersPage() {
           </div>
         </div>
       </MainLayout>
+      </ErrorBoundary>
     );
   }
 
-  const filteredUsers = mockUsers.filter(user => {
+  // Mock data for roles and activities until API is connected
+  const mockRoles = [
+    { id: '1', name: 'User', description: 'Basic user', permissions: [], isDefault: true },
+    { id: '2', name: 'Admin', description: 'Administrator', permissions: [], isDefault: false },
+    { id: '3', name: 'Super Admin', description: 'Super Administrator', permissions: [], isDefault: false }
+  ];
+  const mockUserActivities = [];
+
+  const filteredUsers = users.filter(userData => {
     const matchesSearch = 
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.department.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = selectedRole === 'all' || user.role === selectedRole;
-    const matchesStatus = selectedStatus === 'all' || user.status === selectedStatus;
-    const matchesDepartment = selectedDepartment === 'all' || user.department === selectedDepartment;
+      userData.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      userData.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      userData.department.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesRole = selectedRole === 'all' || userData.role === selectedRole;
+    const matchesStatus = selectedStatus === 'all' || userData.status === selectedStatus;
+    const matchesDepartment = selectedDepartment === 'all' || userData.department === selectedDepartment;
     return matchesSearch && matchesRole && matchesStatus && matchesDepartment;
   });
 
-  const departments = Array.from(new Set(mockUsers.map(user => user.department)));
+  const departments = Array.from(new Set(users.map(userData => userData.department)));
 
   const getRoleColor = (role: string) => {
     switch (role) {
@@ -72,13 +89,14 @@ export default function UsersPage() {
     }
   };
 
-  const totalUsers = mockUsers.length;
-  const activeUsers = mockUsers.filter(user => user.status === 'active').length;
-  const adminUsers = mockUsers.filter(user => user.role === 'admin' || user.role === 'super_admin').length;
+  const totalUsers = users.length;
+  const activeUsers = users.filter(userData => userData.status === 'active').length;
+  const adminUsers = users.filter(userData => userData.role === 'admin' || userData.role === 'super_admin').length;
   const recentActivities = mockUserActivities.slice(0, 10);
 
   return (
-    <MainLayout>
+    <ErrorBoundary>
+      <MainLayout>
       <div className="space-y-6">
         {/* Header */}
         <motion.div 
@@ -142,8 +160,8 @@ export default function UsersPage() {
                           <SelectValue placeholder="Pilih department" />
                         </SelectTrigger>
                         <SelectContent>
-                          {departments.map(dept => (
-                            <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                          {departments.map((dept, index) => (
+                            <SelectItem key={index} value={dept}>{dept}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -271,8 +289,8 @@ export default function UsersPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Semua Department</SelectItem>
-              {departments.map(dept => (
-                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+              {departments.map((dept, index) => (
+                <SelectItem key={index} value={dept}>{dept}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -445,7 +463,7 @@ export default function UsersPage() {
                             </Badge>
                           </TableCell>
                           <TableCell>
-                            {mockUsers.filter(u => u.role === role.name.toLowerCase().replace(' ', '_')).length}
+                            {users.filter(u => u.role === role.name.toLowerCase().replace(' ', '_')).length}
                           </TableCell>
                           <TableCell>
                             {role.isDefault && <Badge variant="secondary">Default</Badge>}
@@ -543,5 +561,6 @@ export default function UsersPage() {
         </Dialog>
       </div>
     </MainLayout>
+    </ErrorBoundary>
   );
 }

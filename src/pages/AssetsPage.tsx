@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useApp } from '@/contexts/AppContext';
 import ModernLoginPage from '@/components/auth/ModernLoginPage';
 import MainLayout from '@/components/layout/MainLayout';
 import { motion } from 'framer-motion';
@@ -15,7 +15,9 @@ import {
   DollarSign,
   Activity
 } from 'lucide-react';
-import { useAssetManager } from '@/hooks/useAssetManager';
+import { useEnhancedAssetManager } from '@/hooks/useEnhancedAssetManager';
+import { ErrorBoundary } from '@/components/feedback/ErrorBoundary';
+import { LoadingOverlay } from '@/components/ui/loading-states';
 import { AssetTable } from '@/components/assets/AssetTable';
 import { AddAssetDialog } from '@/components/assets/AddAssetDialog';
 import { BorrowAssetDialog } from '@/components/assets/BorrowAssetDialog';
@@ -25,24 +27,39 @@ import { EditAssetDialog } from '@/components/assets/EditAssetDialog';
 import { Asset } from '@/types/assets';
 
 const AssetsPage = () => {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useApp();
 
-  if (!user) {
+  if (!isAuthenticated || !user) {
     return <ModernLoginPage />;
   }
 
   const {
     assets,
-    loading,
+    isLoading,
     addAsset,
     updateAsset,
-    assignPIC,
     borrowAsset,
     returnAsset,
     deleteAsset,
-    getAssetStats,
-    getOverdueAssets
-  } = useAssetManager();
+    fetchAssets
+  } = useEnhancedAssetManager();
+
+  // Calculate stats from assets
+  const stats = React.useMemo(() => {
+    const totalAssets = assets.length;
+    const totalValue = assets.reduce((sum, asset) => sum + asset.purchasePrice, 0);
+    const availableAssets = assets.filter(a => a.status === 'available').length;
+    const borrowedAssets = assets.filter(a => a.status === 'borrowed').length;
+    const maintenanceAssets = assets.filter(a => a.status === 'maintenance').length;
+
+    return {
+      totalAssets,
+      totalValue,
+      availableAssets,
+      borrowedAssets,
+      maintenanceAssets,
+    };
+  }, [assets]);
 
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showBorrowDialog, setShowBorrowDialog] = useState(false);
@@ -51,8 +68,13 @@ const AssetsPage = () => {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
 
-  const stats = getAssetStats();
-  const overdueAssets = getOverdueAssets();
+  // Get overdue assets (assets that should have been returned)
+  const overdueAssets = assets.filter(asset => {
+    return asset.status === 'borrowed' && 
+           asset.borrowedBy?.expectedReturnDate && 
+           new Date(asset.borrowedBy.expectedReturnDate) < new Date();
+  });
+
   const canEdit = user.role === 'admin' || user.role === 'super_admin';
 
   const handleBorrowAsset = (asset: Asset) => {
@@ -65,8 +87,16 @@ const AssetsPage = () => {
     setShowAssignPICDialog(true);
   };
 
-  const handleReturnAsset = (asset: Asset) => {
-    returnAsset(asset.id);
+  const assignPIC = async (assetId: string, picId: string, picName: string) => {
+    try {
+      await updateAsset(assetId, { picId, picName });
+    } catch (error) {
+      console.error('Failed to assign PIC:', error);
+    }
+  };
+
+  const handleReturnAsset = async (asset: Asset) => {
+    await returnAsset(asset.id);
   };
 
   const handleViewDetails = (asset: Asset) => {
@@ -95,14 +125,16 @@ const AssetsPage = () => {
   };
 
   return (
-    <MainLayout>
-      <div className="space-y-6 p-4 sm:p-6 pb-20">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="space-y-6"
-        >
+    <ErrorBoundary>
+      <MainLayout>
+        <div className="space-y-6 p-4 sm:p-6 pb-20 relative">
+          <LoadingOverlay show={isLoading} text="Loading assets..." />
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-6"
+          >
           {/* Header */}
           <motion.div 
             variants={itemVariants}
@@ -150,7 +182,6 @@ const AssetsPage = () => {
                     style: 'currency',
                     currency: 'IDR',
                     minimumFractionDigits: 0,
-                    maximumFractionDigits: 0,
                   }).format(stats.totalValue)}
                 </div>
                 <p className="text-xs text-muted-foreground">
@@ -237,14 +268,15 @@ const AssetsPage = () => {
               onViewDetails={handleViewDetails}
             />
           </motion.div>
-        </motion.div>
+          </motion.div>
+        </div>
 
         {/* Dialogs */}
         <AddAssetDialog
           open={showAddDialog}
           onOpenChange={setShowAddDialog}
           onSave={addAsset}
-          loading={loading}
+          loading={isLoading}
         />
 
         <BorrowAssetDialog
@@ -252,7 +284,7 @@ const AssetsPage = () => {
           onOpenChange={setShowBorrowDialog}
           asset={selectedAsset}
           onBorrow={borrowAsset}
-          loading={loading}
+          loading={isLoading}
         />
 
         <AssignPICDialog
@@ -260,7 +292,7 @@ const AssetsPage = () => {
           onOpenChange={setShowAssignPICDialog}
           asset={selectedAsset}
           onAssign={assignPIC}
-          loading={loading}
+          loading={isLoading}
         />
 
         <AssetDetailModal
@@ -274,10 +306,10 @@ const AssetsPage = () => {
           open={showEditDialog}
           onOpenChange={setShowEditDialog}
           onSave={updateAsset}
-          loading={loading}
+          loading={isLoading}
         />
-      </div>
-    </MainLayout>
+      </MainLayout>
+    </ErrorBoundary>
   );
 };
 

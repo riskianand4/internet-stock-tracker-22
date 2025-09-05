@@ -1,17 +1,20 @@
+// Placeholder component for Asset Manager
 import { useState, useCallback, useEffect } from 'react';
 import { Asset, AssetBorrowRequest, AssetStats, MaintenanceRecord } from '@/types/assets';
-import { mockAssets } from '@/data/mockAssets';
 import { useDataPersistence } from '@/hooks/useDataPersistence';
 import useAuditLog from '@/hooks/useAuditLog';
 import { useAuth } from '@/contexts/AuthContext';
+import { useApi } from '@/contexts/ApiContext';
 import { toast } from 'sonner';
 
 export const useAssetManager = () => {
-  const { user } = useAuth();
   const { logAction } = useAuditLog();
+  const { user } = useAuth();
+  const { apiService, isConfigured } = useApi();
+  const [assets, setAssets] = useState<Asset[]>([]);
   
-  const { data: assets, updateData: setAssets } = useDataPersistence<Asset[]>(
-    mockAssets,
+  const { data: assetsData, updateData: updateAssetsData } = useDataPersistence<Asset[]>(
+    [],
     {
       key: 'assets_data',
       version: 1,
@@ -332,19 +335,37 @@ export const useAssetManager = () => {
     );
   }, [assets]);
 
+  // Get asset by ID
+  const getAssetById = useCallback((assetId: string) => {
+    return assets.find(asset => asset.id === assetId);
+  }, [assets]);
+
+  // Fetch/refresh assets from API
+  const fetchAssets = useCallback(async () => {
+    // This would normally fetch from API
+    // For now, just return current assets
+    return assets;
+  }, [assets]);
+
   return {
     assets,
-    loading,
+    stats: getAssetStats(),
+    borrowRequests: [], // This would come from API
+    maintenanceRecords: [], // This would come from API
+    isLoading: loading,
     addAsset,
     updateAsset,
-    assignPIC,
+    deleteAsset,
     borrowAsset,
     returnAsset,
-    addMaintenanceRecord,
-    deleteAsset,
-    getAssetStats,
+    assignPIC,
+    scheduleMaintenanceRecord: async () => {}, // Not implemented yet
+    updateMaintenanceRecord: async () => {}, // Not implemented yet
+    deleteMaintenanceRecord: async () => {}, // Not implemented yet
+    getAssetById,
+    refreshAssets: fetchAssets,
     getAssetsByStatus,
     getAssetsByPIC,
-    getOverdueAssets
+    getOverdueAssets,
   };
 };

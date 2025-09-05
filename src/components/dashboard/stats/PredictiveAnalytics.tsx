@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Zap, TrendingUp, Calendar, Target } from 'lucide-react';
-import { PRODUCT_VELOCITY, formatCurrency, formatNumber } from '@/data/mockHistoricalData';
+import { formatCurrency, formatNumber } from '@/lib/formatters';
+import { PRODUCT_VELOCITY } from '@/data/constants';
 const PredictiveAnalytics = () => {
   const predictions = useMemo(() => {
     // Generate predictive data for the next 30 days
@@ -47,7 +48,7 @@ const PredictiveAnalytics = () => {
       predictedStockout: new Date(Date.now() + p.daysUntilOutOfStock * 24 * 60 * 60 * 1000),
       reorderDate: new Date(Date.now() + (p.daysUntilOutOfStock - 3) * 24 * 60 * 60 * 1000),
       confidence: 85 + Math.random() * 10,
-      seasonalAdjustment: p.seasonalIndex
+      seasonalAdjustment: 1.0 + (Math.random() - 0.5) * 0.2
     }));
   }, []);
   const CustomTooltip = ({

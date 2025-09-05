@@ -12,7 +12,7 @@ import ProductTable from './ProductTable';
 import AddProductDialog from './AddProductDialog';
 import ProductDetailModal from './ProductDetailModal';
 import ProductFilters from './ProductFilters';
-import { DUMMY_PRODUCTS } from '@/data/dummyProducts';
+import { useProductManager } from '@/hooks/useProductManager';
 import { Product } from '@/types/inventory';
 import * as XLSX from 'xlsx';
 export type ViewMode = 'grid' | 'table';
@@ -29,15 +29,26 @@ const ProductsManager = () => {
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [modalMode, setModalMode] = useState<'view' | 'edit'>('view');
 
+  // Use product manager hook for API data
+  const { 
+    products, 
+    isLoading, 
+    isFromApi, 
+    addProduct, 
+    updateProduct, 
+    deleteProduct, 
+    refreshProducts 
+  } = useProductManager();
+
   // Get unique categories
   const categories = useMemo(() => {
-    const cats = Array.from(new Set(DUMMY_PRODUCTS.map(p => p.category)));
+    const cats = Array.from(new Set(products.map(p => p.category)));
     return ['all', ...cats];
-  }, []);
+  }, [products]);
 
   // Filter and sort products
   const filteredProducts = useMemo(() => {
-    let filtered = [...DUMMY_PRODUCTS];
+    let filtered = [...products];
 
     // Apply search filter
     if (searchQuery) {
@@ -66,7 +77,7 @@ const ProductsManager = () => {
         case 'category':
           return a.category.localeCompare(b.category);
         case 'updated':
-          return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime();
+          return new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime();
         default:
           return 0;
       }
@@ -84,7 +95,7 @@ const ProductsManager = () => {
         break;
       case 'export':
         // Export selected products to Excel
-        const selectedData = DUMMY_PRODUCTS.filter(p => selectedProducts.includes(p.id));
+        const selectedData = products.filter(p => selectedProducts.includes(p.id));
         exportToExcel(selectedData, `Produk_Terpilih_${new Date().toISOString().split('T')[0]}.xlsx`);
         break;
       case 'category':
@@ -93,7 +104,7 @@ const ProductsManager = () => {
         break;
     }
   };
-  const exportToExcel = (data: typeof DUMMY_PRODUCTS, filename: string) => {
+  const exportToExcel = (data: Product[], filename: string) => {
     // Create workbook and worksheet
     const worksheet = XLSX.utils.json_to_sheet(data.map(product => ({
       'SKU': product.sku,
@@ -105,7 +116,7 @@ const ProductsManager = () => {
       'Status': product.status,
       'Lokasi': product.location || '-',
       'Supplier': product.supplier || '-',
-      'Terakhir Update': new Date(product.lastUpdated).toLocaleDateString('id-ID')
+      'Terakhir Update': new Date(product.updatedAt).toLocaleDateString('id-ID')
     })));
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, 'Produk');
@@ -153,12 +164,12 @@ const ProductsManager = () => {
     setIsDetailModalOpen(true);
   };
   const stats = useMemo(() => ({
-    total: DUMMY_PRODUCTS.length,
-    inStock: DUMMY_PRODUCTS.filter(p => p.status === 'in_stock').length,
-    lowStock: DUMMY_PRODUCTS.filter(p => p.status === 'low_stock').length,
-    outOfStock: DUMMY_PRODUCTS.filter(p => p.status === 'out_of_stock').length,
-    totalValue: DUMMY_PRODUCTS.reduce((sum, p) => sum + p.price * p.stock, 0)
-  }), []);
+    total: products.length,
+    inStock: products.filter(p => p.status === 'in_stock').length,
+    lowStock: products.filter(p => p.status === 'low_stock').length,
+    outOfStock: products.filter(p => p.status === 'out_of_stock').length,
+    totalValue: products.reduce((sum, p) => sum + p.price * p.stock, 0)
+  }), [products]);
   return <div className="min-h-screen bg-muted/10 mobile-responsive-padding py-3 md:py-6">
       <motion.div initial={{
       opacity: 0,
@@ -301,7 +312,8 @@ const ProductsManager = () => {
             {/* Results info */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mt-4">
               <p className="text-sm text-muted-foreground">
-                Menampilkan {filteredProducts.length} dari {DUMMY_PRODUCTS.length} produk
+                Menampilkan {filteredProducts.length} dari {products.length} produk
+                {isFromApi && <span className="ml-2 text-primary">(dari API)</span>}
               </p>
               
               {selectedProducts.length > 0 && <div className="flex items-center gap-2">

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import MainLayout from '@/components/layout/MainLayout';
+import ModernLoginPage from '@/components/auth/ModernLoginPage';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,9 +17,8 @@ import {
   Search, Plus, Download, Upload, AlertTriangle, Bell, 
   BellOff, Eye, Edit, Trash2, Filter, Settings, CheckCircle, Clock
 } from 'lucide-react';
-import { mockStockAlerts } from '@/data/mockInventory';
-import { mockNotificationSettings } from '@/data/mockSettings';
-import { useAuth } from '@/contexts/AuthContext';
+import { useApp } from '@/contexts/AppContext';
+import { ErrorBoundary } from '@/components/feedback/ErrorBoundary';
 
 // Mock system alerts data
 const mockSystemAlerts = [
@@ -58,14 +58,17 @@ const mockSystemAlerts = [
 ];
 
 export default function AlertsPage() {
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useApp();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedSeverity, setSelectedSeverity] = useState('all');
   const [selectedType, setSelectedType] = useState('all');
   const [showOnlyUnread, setShowOnlyUnread] = useState(false);
 
+  const [stockAlerts, setStockAlerts] = useState<any[]>([]);
+  const [notificationSettings, setNotificationSettings] = useState<any[]>([]);
+
   const allAlerts = [
-    ...mockStockAlerts.map(alert => ({
+    ...stockAlerts.map(alert => ({
       ...alert,
       title: `Stock Alert: ${alert.productName}`,
       timestamp: alert.date,
@@ -109,8 +112,13 @@ export default function AlertsPage() {
   const criticalAlerts = allAlerts.filter(alert => alert.severity === 'critical').length;
   const resolvedAlerts = allAlerts.filter(alert => alert.isResolved).length;
 
+  if (!isAuthenticated || !user) {
+    return <ModernLoginPage />;
+  }
+
   return (
-    <MainLayout>
+    <ErrorBoundary>
+      <MainLayout>
       <div className="mobile-responsive-spacing">
         {/* Header */}
         <motion.div 
@@ -427,7 +435,7 @@ export default function AlertsPage() {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {mockNotificationSettings.map((setting) => (
+                      {notificationSettings.map((setting) => (
                         <TableRow key={setting.id}>
                           <TableCell className="capitalize font-medium">
                             {setting.category.replace('_', ' ')}
@@ -463,5 +471,6 @@ export default function AlertsPage() {
         </motion.div>
       </div>
     </MainLayout>
+    </ErrorBoundary>
   );
 }

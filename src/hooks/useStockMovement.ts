@@ -1,12 +1,36 @@
 import { useState, useEffect, useCallback } from 'react';
 import { StockMovement } from '@/types/stock-movement';
-import { mockStockMovements } from '@/data/mockStockMovements';
+import { stockMovementApi } from '@/services/stockMovementApi';
 import { useToast } from '@/hooks/use-toast';
+import { useApi } from '@/contexts/ApiContext';
 
 export const useStockMovement = () => {
-  const [movements, setMovements] = useState<StockMovement[]>(mockStockMovements);
+  const [movements, setMovements] = useState<StockMovement[]>([]);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const { isConfigured, isOnline } = useApi();
+
+  const fetchMovements = useCallback(async () => {
+    if (!isConfigured || !isOnline) {
+      setMovements([]);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const data = await stockMovementApi.getStockMovements();
+      setMovements(data);
+    } catch (error) {
+      console.error('Failed to fetch stock movements:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch stock movements",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [isConfigured, isOnline, toast]);
 
   const addMovement = useCallback(async (movement: Omit<StockMovement, 'id' | 'timestamp'>) => {
     setLoading(true);

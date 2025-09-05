@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Progress } from '@/components/ui/progress';
 import { Target, TrendingUp, DollarSign, Calculator, AlertTriangle, Award } from 'lucide-react';
-import { DUMMY_PRODUCTS } from '@/data/dummyProducts';
-import { formatCurrency, formatNumber } from '@/data/mockHistoricalData';
+import { formatCurrency, formatNumber } from '@/lib/formatters';
+import { DUMMY_PRODUCTS } from '@/data/constants';
 
 const ROIAnalysis = () => {
   const [analysisType, setAnalysisType] = useState<'product' | 'category' | 'investment'>('product');

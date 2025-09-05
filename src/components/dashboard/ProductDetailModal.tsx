@@ -65,12 +65,13 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     }).format(price);
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: string | Date) => {
+    const dateObj = typeof date === 'string' ? new Date(date) : date;
     return new Intl.DateTimeFormat('id-ID', {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-    }).format(date);
+    }).format(dateObj);
   };
 
   const handleSave = () => {
@@ -85,7 +86,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
     const updatedProduct = {
       ...editedProduct,
       status: newStatus,
-      lastUpdated: new Date(),
+      updatedAt: new Date().toISOString(),
     };
 
     onUpdate(updatedProduct);
@@ -296,7 +297,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({
           <div className="flex items-center justify-between text-sm text-muted-foreground">
             <div className="flex items-center space-x-2">
               <Calendar className="w-4 h-4" />
-              <span>Terakhir diperbarui: {formatDate(product.lastUpdated)}</span>
+              <span>Terakhir diperbarui: {formatDate(product.updatedAt)}</span>
             </div>
             <Badge variant="outline" className="text-xs">
               ID: {product.id}

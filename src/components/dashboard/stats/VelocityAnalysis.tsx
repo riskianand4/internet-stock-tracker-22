@@ -9,7 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { Zap, AlertTriangle, TrendingUp, Package } from 'lucide-react';
 import { useHybridProducts } from '@/hooks/useHybridData';
 import { useStockVelocity } from '@/hooks/useAnalyticsData';
-import { formatNumber } from '@/data/mockHistoricalData';
+import { formatNumber } from '@/lib/formatters';
 import { TimeFilter, DateRange } from '../AdvancedStatsOverview';
 
 interface VelocityAnalysisProps {

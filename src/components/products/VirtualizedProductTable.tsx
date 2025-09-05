@@ -230,7 +230,7 @@ const TableRow = memo<TableRowProps>(({ index, style, data }) => {
 
           {/* Last Updated */}
           <div className="w-24 text-xs text-muted-foreground">
-            {formatDate(product.lastUpdated)}
+            {formatDate(product.updatedAt)}
           </div>
 
           {/* Actions */}

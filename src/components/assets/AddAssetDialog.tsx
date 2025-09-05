@@ -29,11 +29,12 @@ import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { useEnhancedAssetManager } from '@/hooks/useEnhancedAssetManager';
 
 interface AddAssetDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onSave: (asset: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onSave?: (asset: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'>) => void;
   loading?: boolean;
 }
 
@@ -59,6 +60,8 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({
   onSave,
   loading = false,
 }) => {
+  const { addAsset, isLoading: assetLoading } = useEnhancedAssetManager();
+  const isProcessing = loading || assetLoading;
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -96,7 +99,7 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!validateForm()) return;
 
     const asset: Omit<Asset, 'id' | 'createdAt' | 'updatedAt'> = {
@@ -112,8 +115,17 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({
       maintenanceHistory: [],
     };
 
-    onSave(asset);
-    handleReset();
+    try {
+      if (onSave) {
+        onSave(asset);
+      } else {
+        await addAsset(asset);
+      }
+      handleReset();
+      onOpenChange(false);
+    } catch (error) {
+      // Error handling is done in the hook
+    }
   };
 
   const handleReset = () => {
@@ -328,12 +340,12 @@ export const AddAssetDialog: React.FC<AddAssetDialogProps> = ({
               handleReset();
               onOpenChange(false);
             }}
-            disabled={loading}
+            disabled={isProcessing}
           >
             Batal
           </Button>
-          <Button onClick={handleSave} disabled={loading}>
-            {loading ? 'Menyimpan...' : 'Simpan Asset'}
+          <Button onClick={handleSave} disabled={isProcessing}>
+            {isProcessing ? 'Menyimpan...' : 'Simpan Asset'}
           </Button>
         </DialogFooter>
       </DialogContent>

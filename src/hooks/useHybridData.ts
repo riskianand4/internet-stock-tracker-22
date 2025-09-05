@@ -3,8 +3,7 @@ import { useApi } from '@/contexts/ApiContext';
 import { useToast } from '@/hooks/use-toast';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { Product } from '@/types/inventory';
-import { DUMMY_PRODUCTS } from '@/data/dummyProducts';
-import { mockStockMovements } from '@/data/mockStockMovements';
+
 
 interface UseHybridDataOptions {
   localData: any;
@@ -163,7 +162,7 @@ export function useHybridData<T>({
 // Specialized hooks for common use cases
 export function useHybridProducts(): UseHybridDataReturn<Product[]> {
   return useHybridData<Product[]>({
-    localData: DUMMY_PRODUCTS,
+    localData: [],
     apiEndpoint: '/api/products',
     autoRefresh: true,
   });
@@ -171,7 +170,7 @@ export function useHybridProducts(): UseHybridDataReturn<Product[]> {
 
 export function useHybridStockMovements() {
   return useHybridData({
-    localData: mockStockMovements,
+    localData: [],
     apiEndpoint: '/api/stock/movements',
     autoRefresh: true,
   });
@@ -187,16 +186,109 @@ export function useHybridInventoryStats() {
       topProducts: [],
     },
     localFunction: () => {
-      // Calculate from local data
+      // Calculate from local data - will be replaced by API data
       return {
-        totalProducts: DUMMY_PRODUCTS.length,
-        totalValue: DUMMY_PRODUCTS.reduce((sum: number, p: any) => sum + (p.price * p.stock), 0),
-        lowStockCount: DUMMY_PRODUCTS.filter((p: any) => p.status === 'low_stock').length,
-        outOfStockCount: DUMMY_PRODUCTS.filter((p: any) => p.status === 'out_of_stock').length,
-        topProducts: DUMMY_PRODUCTS.slice(0, 5),
+        totalProducts: 0,
+        totalValue: 0,
+        lowStockCount: 0,
+        outOfStockCount: 0,
+        topProducts: [],
       };
     },
     apiEndpoint: '/api/analytics/overview',
+    autoRefresh: true,
+  });
+}
+
+// New hook for inventory items (transformed from products)
+export function useHybridInventoryItems() {
+  const { apiService } = useApi();
+  
+  return useHybridData({
+    localData: [
+      {
+        id: '1',
+        name: 'Router WiFi AC1200',
+        code: 'RWF-001',
+        category: 'Networking',
+        currentStock: 25,
+        minStock: 10,
+        maxStock: 100,
+        location: 'Gudang Utama',
+        lastMovement: new Date(),
+        status: 'in_stock' as const,
+        value: 750000,
+        unit: 'pcs'
+      },
+      {
+        id: '2',
+        name: 'Switch 24 Port',
+        code: 'SW24-001',
+        category: 'Networking',
+        currentStock: 5,
+        minStock: 8,
+        maxStock: 50,
+        location: 'Gudang Utama',
+        lastMovement: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+        status: 'low_stock' as const,
+        value: 2500000,
+        unit: 'pcs'
+      },
+      {
+        id: '3',
+        name: 'Cable UTP Cat6',
+        code: 'UTP-C6',
+        category: 'Accessories',
+        currentStock: 0,
+        minStock: 20,
+        maxStock: 500,
+        location: 'Gudang B',
+        lastMovement: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+        status: 'out_of_stock' as const,
+        value: 0,
+        unit: 'meter'
+      },
+      {
+        id: '4',
+        name: 'Access Point',
+        code: 'AP-001',
+        category: 'Networking',
+        currentStock: 45,
+        minStock: 15,
+        maxStock: 40,
+        location: 'Toko Depan',
+        lastMovement: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+        status: 'overstock' as const,
+        value: 1800000,
+        unit: 'pcs'
+      }
+    ],
+    localFunction: () => {
+      // Transform products data to inventory items format - will be replaced by API data
+      return [];
+    },
+    apiFunction: async () => {
+      if (!apiService) throw new Error('API service not available');
+      const response = await apiService.getProducts();
+      if (response?.success && response.data) {
+        // Transform API products to inventory items format
+        return response.data.map((product: any) => ({
+          id: product.id,
+          name: product.name,
+          code: product.sku || product.productCode,
+          category: product.category,
+          currentStock: product.stock,
+          minStock: product.minStock || 10,
+          maxStock: product.maxStock || 100,
+          location: product.location || 'Gudang Utama',
+          lastMovement: new Date(product.updatedAt || Date.now()),
+          status: product.status,
+          value: product.price * product.stock,
+          unit: 'pcs'
+        }));
+      }
+      throw new Error('Failed to fetch products');
+    },
     autoRefresh: true,
   });
 }

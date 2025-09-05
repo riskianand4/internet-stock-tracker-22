@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useHybridProducts } from '@/hooks/useHybridData';
 import { useSmartInsights, useStockVelocity, useStockAlerts } from '@/hooks/useAnalyticsData';
-import { formatCurrency, formatNumber } from '@/data/mockHistoricalData';
+import { formatCurrency, formatNumber } from '@/lib/formatters';
 import { TimeFilter } from '../AdvancedStatsOverview';
 interface SmartInsightsProps {
   timeFilter: TimeFilter;

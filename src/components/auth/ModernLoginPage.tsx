@@ -9,7 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/hooks/use-toast';
 import { Loader2, Wifi, Eye, EyeOff, Shield, Lock, User, Mail, CheckCircle2, ArrowRight } from 'lucide-react';
 const ModernLoginPage = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [selectedDemo, setSelectedDemo] = useState<string | null>(null);
@@ -18,25 +18,25 @@ const ModernLoginPage = () => {
     isLoading
   } = useAuth();
   const demoCredentials = [{
-    role: 'user',
-    username: 'user',
-    password: 'user123',
-    name: 'User Demo',
+    role: 'staff',
+    email: 'staff@inventory.com',
+    password: 'staff123',
+    name: 'Staff Demo',
     description: 'Akses read-only untuk melihat data',
     color: 'bg-success',
     permissions: ['Lihat Dashboard', 'Lihat Produk', 'Lihat Statistik']
   }, {
     role: 'admin',
-    username: 'admin',
+    email: 'admin@inventory.com',
     password: 'admin123',
     name: 'Admin Demo',
     description: 'Kelola stok dan input data',
     color: 'bg-warning',
     permissions: ['Semua akses User', 'Input/Edit Produk', 'Kelola Inventori']
   }, {
-    role: 'super_admin',
-    username: 'superadmin',
-    password: 'super123',
+    role: 'superadmin',
+    email: 'superadmin@inventory.com',
+    password: 'admin123',
     name: 'Super Admin Demo',
     description: 'Akses penuh sistem',
     color: 'bg-destructive',
@@ -44,30 +44,30 @@ const ModernLoginPage = () => {
   }];
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username || !password) {
+    if (!email || !password) {
       toast({
         title: "Form Incomplete",
-        description: "Username dan password harus diisi",
+        description: "Email dan password harus diisi",
         variant: "destructive"
       });
       return;
     }
-    const success = await login(username, password);
+    const success = await login(email, password);
     if (!success) {
       toast({
         title: "Login Gagal",
-        description: "Username atau password salah",
+        description: "Email atau password salah",
         variant: "destructive"
       });
     } else {
       toast({
         title: "Login Berhasil! 🎉",
-        description: "Selamat datang di Sistem Inventory Telnet Banda Aceh"
+        description: "Selamat datang di Sistem Inventory"
       });
     }
   };
   const handleDemoLogin = (demo: typeof demoCredentials[0]) => {
-    setUsername(demo.username);
+    setEmail(demo.email);
     setPassword(demo.password);
     setSelectedDemo(demo.role);
   };
@@ -216,7 +216,7 @@ const ModernLoginPage = () => {
             
             <CardContent className="space-y-6">
               <form onSubmit={handleSubmit} className="space-y-4">
-                <motion.div className="space-y-2" initial={{
+                 <motion.div className="space-y-2" initial={{
                 opacity: 0,
                 y: 20
               }} animate={{
@@ -226,12 +226,12 @@ const ModernLoginPage = () => {
                 duration: 0.4,
                 delay: 0.3
               }}>
-                  <Label htmlFor="username" className="text-sm font-medium">
-                    Username
+                  <Label htmlFor="email" className="text-sm font-medium">
+                    Email
                   </Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                    <Input id="username" type="text" value={username} onChange={e => setUsername(e.target.value)} placeholder="Masukkan username" disabled={isLoading} className="pl-10 bg-background/50 border-border/50 focus:border-primary" />
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <Input id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Masukkan email" disabled={isLoading} className="pl-10 bg-background/50 border-border/50 focus:border-primary" />
                   </div>
                 </motion.div>
 
@@ -323,7 +323,7 @@ const ModernLoginPage = () => {
                           </Badge>
                           <div>
                             <span className="text-xs text-muted-foreground font-mono">
-                              {demo.username} / {demo.password}
+                              {demo.email} / {demo.password}
                             </span>
                             <p className="text-xs text-muted-foreground">{demo.description}</p>
                           </div>

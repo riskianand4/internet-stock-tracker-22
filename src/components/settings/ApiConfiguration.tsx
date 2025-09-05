@@ -6,26 +6,28 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { useApi } from '@/contexts/ApiContext';
+import { useApp } from '@/contexts/AppContext';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, XCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 const ApiConfiguration = () => {
-  const { config, isConfigured, isOnline, setConfig, clearConfig, testConnection } = useApi();
+  const { config, connectionStatus, setConfig, testConnection } = useApp();
+  const isConfigured = config.apiEnabled;
+  const isOnline = connectionStatus.isOnline;
   const { toast } = useToast();
   
   const [formData, setFormData] = useState({
-    baseURL: '',
-    apiKey: '',
-    enabled: false,
+    baseURL: config.baseURL || '',
+    enabled: config.apiEnabled || false,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
 
   useEffect(() => {
-    if (config) {
-      setFormData(config);
-    }
+    setFormData({
+      baseURL: config.baseURL || '',
+      enabled: config.apiEnabled || false,
+    });
   }, [config]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,7 +40,10 @@ const ApiConfiguration = () => {
         throw new Error('Base URL must start with http:// or https://');
       }
 
-      setConfig(formData);
+      setConfig({
+        apiEnabled: formData.enabled,
+        baseURL: formData.baseURL,
+      });
       
       if (formData.enabled) {
         toast({
@@ -156,19 +161,6 @@ const ApiConfiguration = () => {
               />
             </div>
 
-            <div>
-              <Label htmlFor="apiKey">API Key</Label>
-              <Input
-                id="apiKey"
-                type="password"
-                placeholder="Enter your API key"
-                value={formData.apiKey}
-                onChange={(e) => 
-                  setFormData(prev => ({ ...prev, apiKey: e.target.value }))
-                }
-                disabled={!formData.enabled}
-              />
-            </div>
           </div>
 
           <div className="flex gap-2">
@@ -198,9 +190,9 @@ const ApiConfiguration = () => {
               <Button
                 type="button"
                 variant="destructive"
-                onClick={clearConfig}
+                onClick={() => setConfig({ apiEnabled: false, baseURL: '' })}
               >
-                Clear Configuration
+                Disable API
               </Button>
             )}
           </div>
@@ -210,9 +202,9 @@ const ApiConfiguration = () => {
           <div className="space-y-2">
             <h4 className="text-sm font-medium">Current Configuration</h4>
             <div className="text-sm text-muted-foreground space-y-1">
-              <p>Base URL: {config?.baseURL}</p>
-              <p>API Key: {"*".repeat(config?.apiKey?.length || 0)}</p>
+              <p>Base URL: {config.baseURL}</p>
               <p>Status: {getStatusText()}</p>
+              <p>Last Check: {connectionStatus.lastCheck?.toLocaleTimeString() || 'Never'}</p>
             </div>
           </div>
         )}

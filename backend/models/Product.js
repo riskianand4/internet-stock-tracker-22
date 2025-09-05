@@ -122,7 +122,6 @@ const productSchema = new mongoose.Schema({
 });
 
 // Indexes
-productSchema.index({ sku: 1 });
 productSchema.index({ name: 'text', description: 'text' });
 productSchema.index({ category: 1, status: 1 });
 productSchema.index({ 'stock.current': 1 });

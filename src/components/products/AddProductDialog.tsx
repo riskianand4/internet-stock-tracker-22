@@ -24,8 +24,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { useToast } from '@/hooks/use-toast';
-import { useProductManager } from '@/hooks/useProductManager';
+import { toast } from 'sonner';
+import { useEnhancedProductManager } from '@/hooks/useEnhancedProductManager';
 
 const productSchema = z.object({
   name: z.string().min(1, 'Nama produk wajib diisi'),
@@ -58,8 +58,7 @@ const categories = [
 ];
 
 const AddProductDialog = ({ open, onOpenChange }: AddProductDialogProps) => {
-  const { toast } = useToast();
-  const { addProduct, isLoading } = useProductManager();
+  const { addProduct, isLoading } = useEnhancedProductManager();
   
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema),

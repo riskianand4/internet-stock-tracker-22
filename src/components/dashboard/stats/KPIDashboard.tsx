@@ -4,7 +4,7 @@ import { TrendingUp, TrendingDown, Package, DollarSign, AlertTriangle, BarChart3
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { formatCurrency, formatNumber, calculateGrowthRate } from '@/data/mockHistoricalData';
+import { formatCurrency, formatNumber, calculateGrowthRate } from '@/lib/formatters';
 import { TimeFilter, DateRange } from '../AdvancedStatsOverview';
 import { useAnalyticsOverview } from '@/hooks/useAnalyticsData';
 import type { AnalyticsOverview } from '@/types/analytics';

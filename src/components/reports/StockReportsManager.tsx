@@ -1,6 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FileText, Download, Calendar, Filter, TrendingUp, TrendingDown, Package, AlertCircle } from 'lucide-react';
+import { FileText, Download, Calendar, Filter, TrendingUp, TrendingDown, Package, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,21 +8,60 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { DatePickerWithRange } from '@/components/ui/date-range-picker';
-import { DUMMY_PRODUCTS } from '@/data/dummyProducts';
-import { mockStockMovements } from '@/data/mockInventory';
-import { Product } from '@/types/inventory';
-import { StockMovement } from '@/types/inventory-extended';
+import { useApi } from '@/contexts/ApiContext';
+import { useToast } from '@/hooks/use-toast';
 import * as XLSX from 'xlsx';
 const StockReportsManager = () => {
+  const { apiService, isConfigured, isOnline } = useApi();
+  const { toast } = useToast();
   const [selectedPeriod, setSelectedPeriod] = useState('monthly');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [reportType, setReportType] = useState('summary');
+  const [products, setProducts] = useState<any[]>([]);
+  const [stockMovements, setStockMovements] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Fetch data from backend
+  useEffect(() => {
+    const loadData = async () => {
+      if (!isConfigured || !isOnline || !apiService) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        setIsLoading(true);
+        const [productsResponse, movementsResponse] = await Promise.all([
+          apiService.getProducts(),
+          apiService.request('/api/stock/movements')
+        ]);
+
+        if (productsResponse?.success) {
+          setProducts(productsResponse.data || []);
+        }
+        if (movementsResponse?.success) {
+          setStockMovements(movementsResponse.data || []);
+        }
+      } catch (error) {
+        console.error('Failed to load data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load stock data. Please check your API configuration.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [isConfigured, isOnline, apiService, toast]);
 
   // Generate stock report data
   const stockReportData = useMemo(() => {
-    return DUMMY_PRODUCTS.map(product => {
-      const movements = mockStockMovements.filter(m => m.productId === product.id);
+    return products.map(product => {
+      const movements = stockMovements.filter(m => m.productId === product.id);
       const stockIn = movements.filter(m => m.type === 'in').reduce((sum, m) => sum + m.quantity, 0);
       const stockOut = movements.filter(m => m.type === 'out').reduce((sum, m) => sum + Math.abs(m.quantity), 0);
       const adjustments = movements.filter(m => m.type === 'adjustment').reduce((sum, m) => sum + m.quantity, 0);
@@ -36,7 +75,7 @@ const StockReportsManager = () => {
         turnover: stockOut > 0 ? stockOut / product.stock * 100 : 0
       };
     });
-  }, []);
+  }, [products, stockMovements]);
 
   // Filter by category and location
   const filteredData = useMemo(() => {
@@ -52,11 +91,11 @@ const StockReportsManager = () => {
 
   // Get unique categories and locations
   const categories = useMemo(() => {
-    return ['all', ...Array.from(new Set(DUMMY_PRODUCTS.map(p => p.category)))];
-  }, []);
+    return ['all', ...Array.from(new Set(products.map(p => p.category)))];
+  }, [products]);
   const locations = useMemo(() => {
-    return ['all', ...Array.from(new Set(DUMMY_PRODUCTS.map(p => p.location).filter(Boolean)))];
-  }, []);
+    return ['all', ...Array.from(new Set(products.map(p => p.location).filter(Boolean)))];
+  }, [products]);
 
   // Summary statistics
   const summaryStats = useMemo(() => {
@@ -288,8 +327,25 @@ const StockReportsManager = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <Table className="min-w-[1200px]">
+            {isLoading ? (
+              <div className="flex items-center justify-center p-8">
+                <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                <span>Loading stock data...</span>
+              </div>
+            ) : !isConfigured ? (
+              <div className="text-center p-8 text-muted-foreground">
+                <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p className="mb-2">API not configured</p>
+                <p className="text-sm">Please configure your API settings to load stock data.</p>
+              </div>
+            ) : filteredData.length === 0 ? (
+              <div className="text-center p-8 text-muted-foreground">
+                <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No stock data available</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table className="min-w-[1200px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Kode</TableHead>
@@ -345,8 +401,9 @@ const StockReportsManager = () => {
                       </TableCell>
                     </TableRow>)}
                 </TableBody>
-              </Table>
-            </div>
+                </Table>
+              </div>
+            )}
           </CardContent>
         </Card>
       </motion.div>

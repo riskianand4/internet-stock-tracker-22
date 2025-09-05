@@ -1,220 +1,153 @@
-import { SystemSettings, NotificationSettings, BackupSettings, IntegrationSettings } from '@/types/settings';
+export interface SystemSetting {
+  id: string;
+  key: string;
+  value: any;
+  type: 'string' | 'number' | 'boolean' | 'array' | 'object';
+  category: string;
+  description: string;
+  updatedAt: Date;
+}
 
-export const mockSystemSettings: SystemSettings[] = [
+export interface BackupSetting {
+  id: string;
+  name: string;
+  type: 'full' | 'incremental' | 'differential';
+  frequency: 'daily' | 'weekly' | 'monthly';
+  location: 'local' | 'cloud' | 's3' | 'ftp';
+  enabled: boolean;
+  lastBackup?: Date;
+  nextBackup: Date;
+}
+
+export interface IntegrationSetting {
+  id: string;
+  name: string;
+  type: 'api' | 'webhook' | 'database' | 'file';
+  status: 'active' | 'inactive' | 'error';
+  enabled: boolean;
+  endpoint?: string;
+  lastSync?: Date;
+  config: Record<string, any>;
+}
+
+export const mockSystemSettings: SystemSetting[] = [
   {
     id: '1',
-    category: 'general',
-    key: 'company_name',
-    value: 'Telnet Banda Aceh',
-    description: 'Nama perusahaan yang ditampilkan di sistem',
+    key: 'app.name',
+    value: 'Inventory Management System',
     type: 'string',
-    isPublic: true,
-    updatedAt: new Date('2024-01-01'),
-    updatedBy: 'Ahmad Wijaya'
+    category: 'general',
+    description: 'Nama aplikasi yang ditampilkan',
+    updatedAt: new Date('2024-01-15')
   },
   {
     id: '2',
-    category: 'general',
-    key: 'company_logo',
-    value: '/assets/telnet-logo.png',
-    description: 'Logo perusahaan',
+    key: 'app.timezone',
+    value: 'Asia/Jakarta',
     type: 'string',
-    isPublic: true,
-    updatedAt: new Date('2024-01-01'),
-    updatedBy: 'Ahmad Wijaya'
+    category: 'general',
+    description: 'Timezone default aplikasi',
+    updatedAt: new Date('2024-01-10')
   },
   {
     id: '3',
+    key: 'inventory.auto_reorder',
+    value: true,
+    type: 'boolean',
     category: 'inventory',
-    key: 'low_stock_threshold',
-    value: 10,
-    description: 'Batas minimum stok untuk peringatan',
-    type: 'number',
-    isPublic: false,
-    updatedAt: new Date('2024-01-15'),
-    updatedBy: 'Siti Nurhaliza'
+    description: 'Otomatis membuat order ketika stok minimum tercapai',
+    updatedAt: new Date('2024-01-20')
   },
   {
     id: '4',
-    category: 'inventory',
-    key: 'auto_reorder_enabled',
+    key: 'notifications.email_alerts',
     value: true,
-    description: 'Aktifkan pesanan otomatis saat stok rendah',
     type: 'boolean',
-    isPublic: false,
-    updatedAt: new Date('2024-01-10'),
-    updatedBy: 'Siti Nurhaliza'
-  },
-  {
-    id: '5',
     category: 'notifications',
-    key: 'email_notifications',
-    value: true,
-    description: 'Aktifkan notifikasi email',
-    type: 'boolean',
-    isPublic: false,
-    updatedAt: new Date('2024-01-18'),
-    updatedBy: 'Ahmad Wijaya'
-  },
-  {
-    id: '6',
-    category: 'security',
-    key: 'session_timeout',
-    value: 8,
-    description: 'Waktu timeout sesi dalam jam',
-    type: 'number',
-    isPublic: false,
-    updatedAt: new Date('2024-01-05'),
-    updatedBy: 'Ahmad Wijaya'
-  },
-  {
-    id: '7',
-    category: 'security',
-    key: 'password_policy',
-    value: {
-      minLength: 8,
-      requireUppercase: true,
-      requireNumbers: true,
-      requireSpecialChars: true
-    },
-    description: 'Kebijakan password sistem',
-    type: 'object',
-    isPublic: false,
-    updatedAt: new Date('2024-01-01'),
-    updatedBy: 'Ahmad Wijaya'
-  }
-];
-
-export const mockNotificationSettings: NotificationSettings[] = [
-  {
-    id: '1',
-    userId: '1',
-    type: 'email',
-    category: 'stock_alerts',
-    enabled: true,
-    frequency: 'immediate',
-    threshold: 10
-  },
-  {
-    id: '2',
-    userId: '1',
-    type: 'push',
-    category: 'order_updates',
-    enabled: true,
-    frequency: 'immediate'
-  },
-  {
-    id: '3',
-    userId: '2',
-    type: 'email',
-    category: 'stock_alerts',
-    enabled: true,
-    frequency: 'daily',
-    threshold: 5
-  },
-  {
-    id: '4',
-    userId: '2',
-    type: 'email',
-    category: 'system_notifications',
-    enabled: false,
-    frequency: 'weekly'
+    description: 'Kirim notifikasi email untuk alert penting',
+    updatedAt: new Date('2024-01-18')
   },
   {
     id: '5',
-    userId: '3',
-    type: 'email',
-    category: 'order_updates',
-    enabled: true,
-    frequency: 'immediate'
+    key: 'security.session_timeout',
+    value: 8,
+    type: 'number',
+    category: 'security',
+    description: 'Timeout sesi dalam jam',
+    updatedAt: new Date('2024-01-12')
   }
 ];
 
-export const mockBackupSettings: BackupSettings[] = [
+export const mockBackupSettings: BackupSetting[] = [
   {
     id: '1',
-    name: 'Database Backup Harian',
-    type: 'incremental',
+    name: 'Database Daily Backup',
+    type: 'full',
     frequency: 'daily',
-    retention: 30,
     location: 'cloud',
     enabled: true,
-    lastBackup: new Date('2024-01-18T02:00:00'),
-    nextBackup: new Date('2024-01-19T02:00:00')
+    lastBackup: new Date('2024-01-20T02:00:00'),
+    nextBackup: new Date('2024-01-21T02:00:00')
   },
   {
     id: '2',
-    name: 'Full System Backup Mingguan',
-    type: 'full',
+    name: 'Files Weekly Backup',
+    type: 'incremental',
     frequency: 'weekly',
-    retention: 12,
     location: 'local',
     enabled: true,
-    lastBackup: new Date('2024-01-14T01:00:00'),
-    nextBackup: new Date('2024-01-21T01:00:00')
+    lastBackup: new Date('2024-01-15T03:00:00'),
+    nextBackup: new Date('2024-01-22T03:00:00')
   },
   {
     id: '3',
-    name: 'Archive Backup Bulanan',
+    name: 'System Configuration Backup',
     type: 'full',
     frequency: 'monthly',
-    retention: 24,
-    location: 'cloud',
-    enabled: true,
-    lastBackup: new Date('2024-01-01T00:00:00'),
-    nextBackup: new Date('2024-02-01T00:00:00')
+    location: 's3',
+    enabled: false,
+    nextBackup: new Date('2024-02-01T01:00:00')
   }
 ];
 
-export const mockIntegrationSettings: IntegrationSettings[] = [
+export const mockIntegrationSettings: IntegrationSetting[] = [
   {
     id: '1',
-    name: 'SAP ERP Integration',
+    name: 'ERP System Integration',
     type: 'api',
-    endpoint: 'https://erp.telnet.co.id/api/v1',
-    credentials: {
-      clientId: 'telnet-inventory',
-      clientSecret: '***'
-    },
-    config: {
-      syncInterval: 3600,
-      syncProducts: true,
-      syncOrders: true,
-      syncCustomers: false
-    },
     status: 'active',
-    lastSync: new Date('2024-01-18T06:00:00'),
-    enabled: true
+    enabled: true,
+    endpoint: 'https://erp.company.com/api/v1',
+    lastSync: new Date('2024-01-20T10:30:00'),
+    config: {
+      apiKey: '***hidden***',
+      syncInterval: 300000,
+      entities: ['products', 'orders', 'customers']
+    }
   },
   {
     id: '2',
-    name: 'Email Service',
-    type: 'api',
-    endpoint: 'https://api.mailgun.com/v3',
-    credentials: {
-      apiKey: '***',
-      domain: 'mg.telnet.co.id'
-    },
+    name: 'Warehouse Management System',
+    type: 'webhook',
+    status: 'inactive',
+    enabled: false,
+    endpoint: 'https://wms.company.com/webhook',
     config: {
-      fromEmail: 'noreply@telnet.co.id',
-      fromName: 'Telnet Inventory System'
-    },
-    status: 'active',
-    enabled: true
+      events: ['stock_movement', 'order_fulfillment'],
+      retryAttempts: 3
+    }
   },
   {
     id: '3',
-    name: 'Barcode Scanner API',
-    type: 'webhook',
-    endpoint: 'https://inventory.telnet.co.id/webhooks/barcode',
-    credentials: {
-      secretKey: '***'
-    },
+    name: 'Financial System',
+    type: 'database',
+    status: 'error',
+    enabled: true,
+    lastSync: new Date('2024-01-19T15:45:00'),
     config: {
-      autoUpdateStock: true,
-      validateProducts: true
-    },
-    status: 'inactive',
-    enabled: false
+      host: 'db.finance.company.com',
+      database: 'finance_prod',
+      syncTables: ['transactions', 'invoices']
+    }
   }
 ];

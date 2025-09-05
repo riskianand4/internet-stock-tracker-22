@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TrendingUp, AlertTriangle, Target, Calendar, Zap } from 'lucide-react';
-import { formatCurrency, formatNumber } from '@/data/mockHistoricalData';
+import { formatCurrency, formatNumber } from '@/lib/formatters';
 
 const SalesForecasting = () => {
   const [forecastPeriod, setForecastPeriod] = useState<'30' | '90' | '180' | '365'>('90');

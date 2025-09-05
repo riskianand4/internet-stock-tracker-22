@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 import { Users, Star, Clock, TrendingUp, Package, Award, AlertTriangle, CheckCircle } from 'lucide-react';
-import { mockSupplierPerformance } from '@/data/mockStockMovements';
+import { stockMovementApi } from '@/services/stockMovementApi';
 import { SupplierPerformance as SupplierPerformanceType } from '@/types/stock-movement';
 import { format } from 'date-fns';
 
@@ -15,7 +15,25 @@ const SupplierPerformance = () => {
   const [sortBy, setSortBy] = useState('performance');
   const [metric, setMetric] = useState('onTime');
   
-  const supplierData = mockSupplierPerformance;
+  const [supplierData, setSupplierData] = useState<SupplierPerformanceType[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchSupplierPerformance = async () => {
+      setLoading(true);
+      try {
+        const data = await stockMovementApi.getSupplierPerformance();
+        setSupplierData(data);
+      } catch (error) {
+        console.error('Failed to fetch supplier performance:', error);
+        setSupplierData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSupplierPerformance();
+  }, []);
 
   const getPerformanceScore = (supplier: SupplierPerformanceType) => {
     // Calculate weighted performance score

@@ -8,9 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Progress } from '@/components/ui/progress';
 import { 
   Search, Package, AlertTriangle, TrendingUp, TrendingDown, 
-  Eye, Edit, RotateCcw, Plus, Minus 
+  Eye, Edit, RotateCcw, Plus, Minus, RefreshCw, Wifi, WifiOff
 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useHybridInventoryItems } from '@/hooks/useHybridData';
+import { useToast } from '@/hooks/use-toast';
 
 interface InventoryItem {
   id: string;
@@ -27,76 +29,27 @@ interface InventoryItem {
   unit: string;
 }
 
-// Mock data - in real app, this would come from API/context
-const mockInventoryItems: InventoryItem[] = [
-  {
-    id: '1',
-    name: 'Router WiFi AC1200',
-    code: 'RWF-001',
-    category: 'Networking',
-    currentStock: 25,
-    minStock: 10,
-    maxStock: 100,
-    location: 'Gudang Utama',
-    lastMovement: new Date(),
-    status: 'in_stock',
-    value: 750000,
-    unit: 'pcs'
-  },
-  {
-    id: '2',
-    name: 'Switch 24 Port',
-    code: 'SW24-001',
-    category: 'Networking', 
-    currentStock: 5,
-    minStock: 8,
-    maxStock: 50,
-    location: 'Gudang Utama',
-    lastMovement: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    status: 'low_stock',
-    value: 2500000,
-    unit: 'pcs'
-  },
-  {
-    id: '3',
-    name: 'Cable UTP Cat6',
-    code: 'UTP-C6',
-    category: 'Accessories',
-    currentStock: 0,
-    minStock: 20,
-    maxStock: 500,
-    location: 'Gudang B',
-    lastMovement: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    status: 'out_of_stock',
-    value: 0,
-    unit: 'meter'
-  },
-  {
-    id: '4',
-    name: 'Access Point',
-    code: 'AP-001',
-    category: 'Networking',
-    currentStock: 45,
-    minStock: 15,
-    maxStock: 40,
-    location: 'Toko Depan',
-    lastMovement: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    status: 'overstock',
-    value: 1800000,
-    unit: 'pcs'
-  }
-];
 
 interface InventoryOverviewProps {
   onStockAdjustment?: (productId: string) => void;
 }
 
 const InventoryOverview = ({ onStockAdjustment }: InventoryOverviewProps) => {
+  const { toast } = useToast();
+  const { 
+    data: inventoryItems, 
+    isLoading, 
+    error, 
+    isFromApi, 
+    refresh,
+    lastUpdated 
+  } = useHybridInventoryItems();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedLocation, setSelectedLocation] = useState('all');
   const [selectedStatus, setSelectedStatus] = useState('all');
 
-  const filteredItems = mockInventoryItems.filter(item => {
+  const filteredItems = (inventoryItems as InventoryItem[]).filter(item => {
     const matchesSearch = 
       item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -107,6 +60,22 @@ const InventoryOverview = ({ onStockAdjustment }: InventoryOverviewProps) => {
     
     return matchesSearch && matchesLocation && matchesStatus;
   });
+
+  const handleRefresh = async () => {
+    try {
+      await refresh();
+      toast({
+        title: "Data Refreshed",
+        description: "Inventory data has been updated successfully",
+      });
+    } catch (err) {
+      toast({
+        title: "Refresh Failed",
+        description: "Failed to refresh inventory data",
+        variant: "destructive",
+      });
+    }
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -140,13 +109,34 @@ const InventoryOverview = ({ onStockAdjustment }: InventoryOverviewProps) => {
   };
 
   // Statistics
+  const typedItems = inventoryItems as InventoryItem[];
   const stats = {
-    total: mockInventoryItems.length,
-    inStock: mockInventoryItems.filter(i => i.status === 'in_stock').length,
-    lowStock: mockInventoryItems.filter(i => i.status === 'low_stock').length,
-    outOfStock: mockInventoryItems.filter(i => i.status === 'out_of_stock').length,
-    totalValue: mockInventoryItems.reduce((sum, item) => sum + item.value, 0),
+    total: typedItems.length,
+    inStock: typedItems.filter(i => i.status === 'in_stock').length,
+    lowStock: typedItems.filter(i => i.status === 'low_stock').length,
+    outOfStock: typedItems.filter(i => i.status === 'out_of_stock').length,
+    totalValue: typedItems.reduce((sum, item) => sum + item.value, 0),
   };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i} className="animate-pulse">
+              <CardHeader className="space-y-0 pb-2">
+                <div className="h-4 bg-muted rounded w-24" />
+              </CardHeader>
+              <CardContent>
+                <div className="h-8 bg-muted rounded w-16 mb-2" />
+                <div className="h-3 bg-muted rounded w-32" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -255,8 +245,42 @@ const InventoryOverview = ({ onStockAdjustment }: InventoryOverviewProps) => {
       >
         <Card>
           <CardHeader>
-            <CardTitle>Real-time Stock Levels</CardTitle>
-            <CardDescription>Monitor semua level stok produk secara real-time</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  Real-time Stock Levels
+                  {isFromApi ? (
+                    <Wifi className="h-4 w-4 text-success" />
+                  ) : (
+                    <WifiOff className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </CardTitle>
+                <CardDescription>
+                  Monitor semua level stok produk secara real-time
+                  {isFromApi ? ' (Live Data)' : ' (Local Data)'}
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-2">
+                {lastUpdated && (
+                  <span className="text-xs text-muted-foreground">
+                    Updated: {lastUpdated.toLocaleTimeString()}
+                  </span>
+                )}
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleRefresh}
+                  disabled={isLoading}
+                >
+                  <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+            </div>
+            {error && (
+              <div className="mt-2 p-2 bg-destructive/10 border border-destructive/20 rounded text-sm text-destructive">
+                {error}
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             <Table>

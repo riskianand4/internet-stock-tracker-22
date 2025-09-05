@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Asset } from '@/types/assets';
 import {
   Dialog,
@@ -19,7 +19,7 @@ import {
 } from '@/components/ui/select';
 import { User as UserIcon, Shield, Badge as BadgeIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { mockUsers } from '@/data/mockUsers';
+import UserApi from '@/services/userApi';
 
 interface AssignPICDialogProps {
   open: boolean;
@@ -38,11 +38,29 @@ export const AssignPICDialog: React.FC<AssignPICDialogProps> = ({
 }) => {
   const [selectedPICId, setSelectedPICId] = useState<string>('');
 
-  // Get available PICs (admin and staff only, active status)
-  const availablePICs = mockUsers.filter(user => 
-    user.status === 'active' && 
-    (user.role === 'admin' || user.role === 'user')
-  );
+  const [availablePICs, setAvailablePICs] = useState<any[]>([]);
+  const [loadingUsers, setLoadingUsers] = useState(false);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      setLoadingUsers(true);
+      try {
+        const users = await UserApi.getAllUsers();
+        const pics = users.filter(user => 
+          user.status === 'active' && 
+          (user.role === 'admin' || user.role === 'user')
+        );
+        setAvailablePICs(pics);
+      } catch (error) {
+        console.error('Failed to fetch users:', error);
+        setAvailablePICs([]);
+      } finally {
+        setLoadingUsers(false);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   const selectedPIC = availablePICs.find(user => user.id === selectedPICId);
 
@@ -217,13 +235,13 @@ export const AssignPICDialog: React.FC<AssignPICDialogProps> = ({
           <Button
             variant="outline"
             onClick={() => handleOpenChange(false)}
-            disabled={loading}
+            disabled={loading || loadingUsers}
           >
             Batal
           </Button>
           <Button 
             onClick={handleAssign} 
-            disabled={loading || !selectedPICId}
+            disabled={loading || loadingUsers || !selectedPICId}
           >
             {loading ? 'Menugaskan...' : 'Tugaskan PIC'}
           </Button>
