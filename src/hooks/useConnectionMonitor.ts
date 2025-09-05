@@ -79,11 +79,11 @@ export const useConnectionMonitor = () => {
     setIsMonitoring(false);
   }, []);
 
-  // Monitor connection when enabled
+  // Monitor connection when enabled - use longer interval to prevent spam
   useEffect(() => {
     if (!isMonitoring || !config.apiEnabled) return;
 
-    const interval = setInterval(updateMetrics, 30000); // Check every 30 seconds
+    const interval = setInterval(updateMetrics, 60000); // Check every 60 seconds
     
     // Initial check
     updateMetrics();

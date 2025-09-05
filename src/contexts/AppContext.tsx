@@ -106,13 +106,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({
     localStorage.removeItem("app-config");
   };
 
+  // Initial connection test only - useConnectionMonitor handles periodic checks
   useEffect(() => {
     testConnection();
-    const interval = setInterval(() => {
-      testConnection();
-    }, 60000);
-
-    return () => clearInterval(interval); // bersihin saat unmount
   }, []);
 
   const value: AppContextType = {
